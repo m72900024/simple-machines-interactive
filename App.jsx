@@ -222,6 +222,33 @@ function SectionLockedNotice({ section, missing }) {
   );
 }
 
+function WordwallGame({ src, sectionLabel }) {
+  return (
+    <div className="mt-10 p-5 rounded-xl border-2 border-purple-300 bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50 shadow-sm">
+      <div className="flex items-center gap-2 mb-3">
+        <PartyPopper className="w-6 h-6 text-purple-600" />
+        <h3 className="text-xl font-bold text-purple-900">🎮 {sectionLabel} 闖關遊戲</h3>
+      </div>
+      <p className="text-slate-700 mb-4 text-sm md:text-base">
+        恭喜通過所有小檢查！來玩個遊戲驗收一下剛剛學到的東西吧 🎯
+      </p>
+      <div className="bg-white rounded-lg overflow-hidden border border-slate-300 shadow-inner mx-auto" style={{ maxWidth: '640px' }}>
+        <div className="relative w-full" style={{ paddingBottom: `${(380/500)*100}%` }}>
+          <iframe
+            src={src}
+            title={`${sectionLabel} 闖關遊戲`}
+            className="absolute top-0 left-0 w-full h-full"
+            frameBorder="0"
+            allowFullScreen
+            allow="fullscreen"
+          />
+        </div>
+      </div>
+      <p className="text-xs text-slate-500 mt-3 text-center">由 Wordwall 提供 • 點右下角可全螢幕、可重玩</p>
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <ProgressProvider>
@@ -823,6 +850,14 @@ function LeverSection() {
       </section>
       ) : (
         <LockedPlaceholder partId="1-3" title="槓桿實驗室" requiresPartId="1-2" />
+      )}
+
+      {/* Wordwall Game：1-3 通過後出現 */}
+      {unlocked['1-3'] && (
+        <WordwallGame
+          src="https://wordwall.net/tc/embed/c03fb77019e24157ac9164cf8d9f6385?themeId=23&templateId=49&fontStackId=0"
+          sectionLabel="第 1 節 槓桿"
+        />
       )}
     </div>
   );
