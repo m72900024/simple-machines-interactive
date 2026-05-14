@@ -1449,6 +1449,14 @@ function GearSection() {
       ) : (
         <LockedPlaceholder partId="4-3" title="綜合總整理" requiresPartId="4-2" />
       )}
+
+      {/* Wordwall Game：4-3 通過後出現 */}
+      {unlocked['4-3'] && (
+        <WordwallGame
+          src="https://wordwall.net/tc/embed/0408bd59dd164f219d674eedd27414b1?themeId=43&templateId=5&fontStackId=0"
+          sectionLabel="第 4 節 齒輪+綜合"
+        />
+      )}
     </div>
   );
 }
