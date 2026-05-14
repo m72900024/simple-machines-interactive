@@ -31,48 +31,290 @@
 <script type="text/babel" data-type="module" data-presets="react">
 import { createRoot } from 'react-dom/client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext, createContext, useRef } from 'react';
 import {
   BookOpen, Gamepad2, Lightbulb, CheckCircle2, XCircle,
   Settings, RotateCw, RotateCcw, Wrench, Scale, FileText, ChevronLeft, ChevronRight, FileDown,
-  ArrowUp, ArrowDown, Hand
+  ArrowUp, ArrowDown, Hand, Lock, Sparkles, PartyPopper, Trophy
 } from 'lucide-react';
 
+/* =========================================
+   闖關進度系統（5/15 新增）
+   每節拆 1-N 個 part，每個 part 末端一題 mini-quiz，答對才能開下一段。
+   全 11 關通過才開單元總測驗。localStorage 持久化。
+   ========================================= */
+const PARTS = ['1-1','1-2','1-3','2-1','2-2','2-3','3-1','3-2','4-1','4-2','4-3'];
+const SECTION_PARTS = {
+  lever:  ['1-1','1-2','1-3'],
+  wheel:  ['2-1','2-2','2-3'],
+  pulley: ['3-1','3-2'],
+  gear:   ['4-1','4-2','4-3'],
+};
+const SECTION_LABEL = { lever: '第 1 節 槓桿', wheel: '第 2 節 輪軸', pulley: '第 3 節 滑輪', gear: '第 4 節 齒輪+綜合' };
+const NEXT_SECTION = { '1-3': 'wheel', '2-3': 'pulley', '3-2': 'gear', '4-3': 'quiz' };
+const STORAGE_KEY = 'sm_interactive_progress_v1';
+
+const QUIZ = {
+  '1-1': { q: '槓桿轉動時，固定不動的那個點叫做什麼？', opts: ['施力點', '抗力點', '支點'], a: 2, hint: '翹翹板中間那根棒子，是被什麼撐住不動？' },
+  '1-2': { q: '「開瓶器」屬於哪一種槓桿？', opts: ['省力槓桿', '費力槓桿', '等臂槓桿'], a: 0, hint: '開瓶蓋很輕鬆，是因為施力臂比抗力臂長還是短？' },
+  '1-3': { q: '抗力不變，把施力點往外移（施力臂變長），所需要的力會？', opts: ['變大', '變小', '不變'], a: 1, hint: '回上面實驗室拉看看，離支點越遠是不是越省力？' },
+  '2-1': { q: '輪軸的「支點」位於哪裡？', opts: ['輪的邊緣', '軸的邊緣', '輪和軸的中心'], a: 2, hint: '想想看輪軸轉動時，哪一點不會移動？' },
+  '2-2': { q: '螺絲起子粗的「把手」是輪、細的「金屬桿」是軸，我們用手轉把手是？', opts: ['施力在輪，省力', '施力在軸，費力', '施力在軸，省力'], a: 0, hint: '施力在大圓（輪半徑大）會省力還是費力？' },
+  '2-3': { q: '同一個輪軸，「施力在輪」與「施力在軸」相比？', opts: ['施力在輪比較省力', '施力在軸比較省力', '兩個一樣'], a: 0, hint: '你剛剛拉哪一邊，需要的力比較小？' },
+  '3-1': { q: '國旗升旗桿頂端的滑輪屬於哪一種？', opts: ['定滑輪', '動滑輪', '都可以'], a: 0, hint: '它有跟著國旗一起被拉上去嗎？' },
+  '3-2': { q: '「動滑輪」能省一半的力，代價是什麼？', opts: ['拉繩子的距離要兩倍', '沒有代價', '不能改變方向（這不算代價）'], a: 0, hint: '在實驗室裡，動滑輪要拉多長的繩子物體才會上升一點？' },
+  '4-1': { q: '兩個互相咬合的齒輪，轉動方向是？', opts: ['相同', '相反', '不一定'], a: 1, hint: '齒輪牙齒咬在一起，推一邊，另一邊會被推往哪？' },
+  '4-2': { q: '大齒輪轉一圈，旁邊咬合的小齒輪會？', opts: ['也轉一圈', '轉超過一圈', '轉不到一圈'], a: 1, hint: '看一下實驗室裡綠色小齒輪的轉速比較快還是慢？' },
+  '4-3': { q: '下面哪一句話最正確？', opts: ['機械可以同時省力又省距離', '機械可以省力，但要拉得更遠（功不變）', '機械不能省力'], a: 1, hint: '看一下上面「核心觀念—功不變」那一段' },
+};
+
+const ProgressContext = createContext(null);
+
+function ProgressProvider({ children }) {
+  const [unlocked, setUnlocked] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+    catch { return {}; }
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(unlocked)); } catch {}
+  }, [unlocked]);
+
+  const markDone = (partId) => setUnlocked(u => ({ ...u, [partId]: true }));
+  const reset = () => { setUnlocked({}); try { localStorage.removeItem(STORAGE_KEY); } catch {} };
+
+  const totalDone = PARTS.filter(p => unlocked[p]).length;
+  const percent = Math.round((totalDone / PARTS.length) * 100);
+
+  const isSectionAccessible = (section) => {
+    if (section === 'textbook' || section === 'lever') return true;
+    const need = {
+      wheel: SECTION_PARTS.lever,
+      pulley: [...SECTION_PARTS.lever, ...SECTION_PARTS.wheel],
+      gear: [...SECTION_PARTS.lever, ...SECTION_PARTS.wheel, ...SECTION_PARTS.pulley],
+      quiz: PARTS,
+    }[section] || [];
+    return need.every(p => unlocked[p]);
+  };
+
+  return (
+    <ProgressContext.Provider value={{ unlocked, markDone, reset, totalDone, percent, isSectionAccessible }}>
+      {children}
+    </ProgressContext.Provider>
+  );
+}
+
+function TopProgressBar() {
+  const { unlocked, totalDone, percent, reset } = useContext(ProgressContext);
+  return (
+    <div className="bg-white/95 backdrop-blur border-t border-blue-500/30 px-4 py-3">
+      <div className="max-w-5xl mx-auto">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-sm font-bold text-slate-700 flex items-center gap-1">
+            <Trophy className="w-4 h-4 text-amber-500" /> 學習進度
+          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-black text-blue-600">{totalDone} / {PARTS.length}（{percent}%）</span>
+            {totalDone > 0 && (
+              <button onClick={() => { if (confirm('確定要重置學習進度嗎？')) reset(); }}
+                className="text-xs text-slate-400 hover:text-red-500 underline">重置</button>
+            )}
+          </div>
+        </div>
+        <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
+          <div className="h-full bg-gradient-to-r from-blue-400 via-emerald-400 to-amber-400 transition-all duration-700 rounded-full"
+            style={{ width: `${percent}%` }} />
+        </div>
+        <div className="flex gap-1 mt-2">
+          {PARTS.map(p => (
+            <div key={p} title={`第 ${p} 關`}
+              className={`flex-1 h-1.5 rounded-full transition-colors ${unlocked[p] ? 'bg-emerald-400' : 'bg-slate-200'}`} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PartHeader({ number, title }) {
+  return (
+    <div className="mb-4 flex items-center gap-3 bg-gradient-to-r from-blue-50 to-transparent px-4 py-2 rounded-lg border-l-4 border-blue-500">
+      <span className="text-2xl font-black text-blue-600 tabular-nums">{number}</span>
+      <h3 className="text-xl font-bold text-blue-900">{title}</h3>
+    </div>
+  );
+}
+
+function MiniQuiz({ partId, nextPartId }) {
+  const { unlocked, markDone, isSectionAccessible } = useContext(ProgressContext);
+  const done = !!unlocked[partId];
+  const quiz = QUIZ[partId];
+  const [selectedIdx, setSelectedIdx] = useState(null);
+  const [feedback, setFeedback] = useState(null);
+
+  const submit = (idx) => {
+    if (feedback) return;
+    setSelectedIdx(idx);
+    if (idx === quiz.a) {
+      setFeedback('correct');
+      setTimeout(() => {
+        markDone(partId);
+        if (nextPartId) {
+          setTimeout(() => {
+            document.getElementById(`part-${nextPartId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 400);
+        }
+      }, 800);
+    } else {
+      setFeedback('wrong');
+      setTimeout(() => { setSelectedIdx(null); setFeedback(null); }, 2200);
+    }
+  };
+
+  if (done) {
+    const nextSection = NEXT_SECTION[partId];
+    return (
+      <div className="mt-6 p-4 rounded-xl border-2 border-emerald-300 bg-emerald-50">
+        <div className="flex items-start gap-3">
+          <CheckCircle2 className="w-6 h-6 text-emerald-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <div className="font-bold text-emerald-800 flex items-center gap-2">
+              這一關通過囉！
+              {nextSection && (
+                <span className="text-xs bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-full">
+                  {nextSection === 'quiz' ? '🎉 全部完成！可以挑戰單元總測驗' : `已解鎖 ${SECTION_LABEL[nextSection]}`}
+                </span>
+              )}
+            </div>
+            <div className="text-sm text-emerald-700 mt-1">{quiz.q} → <strong>{quiz.opts[quiz.a]}</strong></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-6 p-5 rounded-xl border-2 border-amber-300 bg-gradient-to-br from-amber-50 to-yellow-50 shadow-sm">
+      <div className="flex items-center gap-2 mb-3">
+        <Sparkles className="w-5 h-5 text-amber-600" />
+        <span className="font-bold text-amber-900">小檢查 {partId} — 答對才能解鎖下一段</span>
+      </div>
+      <h4 className="font-bold text-slate-800 mb-4 text-base md:text-lg">{quiz.q}</h4>
+      <div className="space-y-2">
+        {quiz.opts.map((opt, idx) => {
+          const isSel = selectedIdx === idx;
+          const showCorrect = feedback === 'correct' && isSel;
+          const showWrong = feedback === 'wrong' && isSel;
+          let cls = 'w-full text-left p-3 rounded-lg border-2 transition-all font-medium ';
+          if (showCorrect) cls += 'border-green-500 bg-green-100 text-green-800';
+          else if (showWrong) cls += 'border-red-500 bg-red-100 text-red-800';
+          else if (!isSel && !feedback) cls += 'border-slate-200 bg-white hover:border-blue-400 hover:bg-blue-50 text-slate-700';
+          else cls += 'border-slate-200 bg-slate-50 text-slate-400';
+          return (
+            <button key={idx} onClick={() => submit(idx)} disabled={feedback !== null} className={cls}>
+              <span className="inline-block w-6 font-black text-slate-500">{String.fromCharCode(65 + idx)}.</span>
+              {opt}
+              {showCorrect && <CheckCircle2 className="inline ml-2 w-5 h-5 text-green-600" />}
+              {showWrong && <XCircle className="inline ml-2 w-5 h-5 text-red-600" />}
+            </button>
+          );
+        })}
+      </div>
+      {feedback === 'wrong' && (
+        <div className="mt-3 p-3 bg-red-50 border border-red-200 text-red-800 rounded-lg text-sm">
+          ❌ 再看一下這一段內容，想想看再試試看！
+          {quiz.hint && <span className="block mt-1 text-red-700">💡 提示：{quiz.hint}</span>}
+        </div>
+      )}
+      {feedback === 'correct' && (
+        <div className="mt-3 p-3 bg-green-50 border border-green-200 text-green-800 rounded-lg text-sm flex items-center gap-2">
+          <CheckCircle2 className="w-5 h-5" /> 答對了！正在解鎖下一段⋯
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LockedPlaceholder({ partId, title, requiresPartId }) {
+  return (
+    <div id={`part-${partId}`} className="scroll-mt-44 mt-8 p-8 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 text-center">
+      <Lock className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+      <h3 className="text-lg font-bold text-slate-600">{partId} {title}</h3>
+      <p className="text-slate-500 mt-2">通過上一關（{requiresPartId}）的小檢查就能解鎖這一段</p>
+    </div>
+  );
+}
+
+function SectionLockedNotice({ section, missing }) {
+  return (
+    <div className="animate-fade-in p-8 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 text-center">
+      <Lock className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+      <h2 className="text-2xl font-bold text-slate-700 mb-2">{SECTION_LABEL[section] || section} 還沒解鎖</h2>
+      <p className="text-slate-500">請先完成前面的關卡：{missing.join('、')}</p>
+    </div>
+  );
+}
+
 function App() {
+  return (
+    <ProgressProvider>
+      <AppInner />
+    </ProgressProvider>
+  );
+}
+
+function AppInner() {
   const [activeTab, setActiveTab] = useState('textbook');
   const [pdfUrl, setPdfUrl] = useState(null);
+  const { isSectionAccessible, unlocked } = useContext(ProgressContext);
+
+  const tryTab = (tab) => {
+    if (isSectionAccessible(tab)) setActiveTab(tab);
+  };
+
+  const missingFor = (section) => {
+    const labels = { '1-1':'1-1 槓桿三要素','1-2':'1-2 三類型','1-3':'1-3 槓桿實驗','2-1':'2-1 剖面圖','2-2':'2-2 輪軸原理','2-3':'2-3 輪軸實驗','3-1':'3-1 滑輪兄弟','3-2':'3-2 滑輪實驗','4-1':'4-1 齒輪與鏈條','4-2':'4-2 齒輪實驗','4-3':'4-3 綜合總整理' };
+    const need = section === 'wheel' ? SECTION_PARTS.lever
+      : section === 'pulley' ? [...SECTION_PARTS.lever, ...SECTION_PARTS.wheel]
+      : section === 'gear' ? [...SECTION_PARTS.lever, ...SECTION_PARTS.wheel, ...SECTION_PARTS.pulley]
+      : section === 'quiz' ? PARTS : [];
+    return need.filter(p => !unlocked[p]).map(p => labels[p] || p);
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans overflow-x-hidden">
-      {/* Header */}
-      <header className="bg-blue-600 text-white p-6 shadow-md sticky top-0 z-50">
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Wrench className="w-8 h-8" />
-              六年級自然:簡單機械
-            </h1>
-            <p className="mt-2 text-blue-100 text-sm md:text-base">第一單元互動學習網 ｜ 電子課本 × 動態圖解 × 虛擬實驗室</p>
+      {/* Header (sticky, includes progress bar) */}
+      <header className="bg-blue-600 text-white shadow-md sticky top-0 z-50">
+        <div className="max-w-5xl mx-auto p-4 md:p-6">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+                <Wrench className="w-7 h-7 md:w-8 md:h-8" />
+                六年級自然：簡單機械
+              </h1>
+              <p className="mt-1 text-blue-100 text-xs md:text-sm">第一單元互動學習網 ｜ 闖關式學習</p>
+            </div>
+            <nav className="flex flex-wrap gap-2 justify-center">
+              <TabButton active={activeTab === 'textbook'} onClick={() => tryTab('textbook')} label="📚 電子課本" />
+              <TabButton active={activeTab === 'lever'} onClick={() => tryTab('lever')} label="第1節 槓桿" />
+              <TabButton active={activeTab === 'wheel'} onClick={() => tryTab('wheel')} label="第2節 輪軸" locked={!isSectionAccessible('wheel')} />
+              <TabButton active={activeTab === 'pulley'} onClick={() => tryTab('pulley')} label="第3節 滑輪" locked={!isSectionAccessible('pulley')} />
+              <TabButton active={activeTab === 'gear'} onClick={() => tryTab('gear')} label="第4節 齒輪+綜合" locked={!isSectionAccessible('gear')} />
+              <TabButton active={activeTab === 'quiz'} onClick={() => tryTab('quiz')} label="單元總測驗" isQuiz locked={!isSectionAccessible('quiz')} />
+            </nav>
           </div>
-          <nav className="mt-4 md:mt-0 flex flex-wrap gap-2 justify-center">
-            <TabButton active={activeTab === 'textbook'} onClick={() => setActiveTab('textbook')} label="📚 電子課本" />
-            <TabButton active={activeTab === 'lever'} onClick={() => setActiveTab('lever')} label="第1節 槓桿" />
-            <TabButton active={activeTab === 'wheel'} onClick={() => setActiveTab('wheel')} label="第2節 輪軸" />
-            <TabButton active={activeTab === 'pulley'} onClick={() => setActiveTab('pulley')} label="第3節 滑輪" />
-            <TabButton active={activeTab === 'gear'} onClick={() => setActiveTab('gear')} label="第4節 齒輪+綜合" />
-            <TabButton active={activeTab === 'quiz'} onClick={() => setActiveTab('quiz')} label="單元總測驗" isQuiz />
-          </nav>
         </div>
+        <TopProgressBar />
       </header>
 
       {/* Main Content */}
       <main className="max-w-5xl mx-auto p-4 md:p-6 my-4 bg-white rounded-xl shadow-sm border border-slate-200 min-h-[80vh]">
         {activeTab === 'textbook' && <TextbookSection pdfUrl={pdfUrl} setPdfUrl={setPdfUrl} />}
         {activeTab === 'lever' && <LeverSection />}
-        {activeTab === 'wheel' && <WheelAxleSection />}
-        {activeTab === 'pulley' && <PulleySection />}
-        {activeTab === 'gear' && <GearSection />}
-        {activeTab === 'quiz' && <QuizSection />}
+        {activeTab === 'wheel' && (isSectionAccessible('wheel') ? <WheelAxleSection /> : <SectionLockedNotice section="wheel" missing={missingFor('wheel')} />)}
+        {activeTab === 'pulley' && (isSectionAccessible('pulley') ? <PulleySection /> : <SectionLockedNotice section="pulley" missing={missingFor('pulley')} />)}
+        {activeTab === 'gear' && (isSectionAccessible('gear') ? <GearSection /> : <SectionLockedNotice section="gear" missing={missingFor('gear')} />)}
+        {activeTab === 'quiz' && (isSectionAccessible('quiz') ? <QuizSection /> : <SectionLockedNotice section="quiz" missing={missingFor('quiz')} />)}
       </main>
 
       <footer className="text-center p-6 text-slate-500 text-sm">
@@ -82,18 +324,23 @@ function App() {
   );
 }
 
-function TabButton({ active, onClick, label, isQuiz }) {
+function TabButton({ active, onClick, label, isQuiz, locked }) {
+  const base = 'px-3 md:px-4 py-2 rounded-lg font-medium transition-all text-sm md:text-base mb-1 flex items-center gap-1';
+  let style;
+  if (locked) {
+    style = 'bg-slate-400/60 text-slate-200 cursor-not-allowed border-b-4 border-slate-500';
+  } else if (active) {
+    style = 'bg-white text-blue-600 shadow-sm border-b-4 border-blue-400 hover:translate-y-px active:translate-y-1 active:border-b-0';
+  } else if (isQuiz) {
+    style = 'bg-orange-500 text-white hover:bg-orange-400 border-b-4 border-orange-700 hover:translate-y-px active:translate-y-1 active:border-b-0';
+  } else {
+    style = 'bg-blue-700 text-white hover:bg-blue-500 border-b-4 border-blue-800 hover:translate-y-px active:translate-y-1 active:border-b-0';
+  }
   return (
-    <button
-      onClick={onClick}
-      className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-        active
-          ? 'bg-white text-blue-600 shadow-sm border-b-4 border-blue-400'
-          : isQuiz
-            ? 'bg-orange-500 text-white hover:bg-orange-400 border-b-4 border-orange-700'
-            : 'bg-blue-700 text-white hover:bg-blue-500 border-b-4 border-blue-800'
-      } hover:translate-y-px active:translate-y-1 active:border-b-0 mb-1`}
-    >
+    <button onClick={locked ? undefined : onClick} disabled={locked}
+      title={locked ? '完成前一節才能進入' : undefined}
+      className={`${base} ${style}`}>
+      {locked && <Lock className="w-3.5 h-3.5" />}
       {label}
     </button>
   );
@@ -486,12 +733,16 @@ function TextbookSection({ pdfUrl, setPdfUrl }) {
    Section 1: Lever (槓桿)
    ========================================= */
 function LeverSection() {
+  const { unlocked } = useContext(ProgressContext);
   return (
     <div className="animate-fade-in">
       <h2 className="text-2xl font-bold text-blue-800 mb-6 flex items-center gap-2 border-b pb-2">
         <Scale className="text-blue-500" /> 第 1 節:認識槓桿原理
       </h2>
 
+      {/* Part 1-1 */}
+      <section id="part-1-1" className="scroll-mt-44 mb-10">
+      <PartHeader number="1-1" title="槓桿三要素" />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <Card title="重點整理:槓桿三要素" icon={<BookOpen className="text-green-500" />}>
           <div className="aspect-[2/1] mb-4 bg-blue-50 rounded-lg overflow-hidden border border-slate-200">
@@ -515,8 +766,14 @@ function LeverSection() {
           </p>
         </Card>
       </div>
+      <MiniQuiz partId="1-1" nextPartId="1-2" />
+      </section>
 
-      <h3 className="text-xl font-bold text-blue-800 mb-4 flex items-center gap-2 border-b pb-2 mt-8">
+      {/* Part 1-2 */}
+      {unlocked['1-1'] ? (
+      <section id="part-1-2" className="scroll-mt-44 mb-10">
+      <PartHeader number="1-2" title="槓桿三種類型" />
+      <h3 className="text-xl font-bold text-blue-800 mb-4 flex items-center gap-2 border-b pb-2 mt-2">
         <Lightbulb className="text-amber-500" /> 生活中的槓桿應用大集合
       </h3>
       {/* 放大圖片:調整 grid 排版為 lg:grid-cols-3,並增加 gap */}
@@ -584,8 +841,22 @@ function LeverSection() {
           </table>
         </div>
       </div>
+      <MiniQuiz partId="1-2" nextPartId="1-3" />
+      </section>
+      ) : (
+        <LockedPlaceholder partId="1-2" title="槓桿三種類型" requiresPartId="1-1" />
+      )}
 
+      {/* Part 1-3 */}
+      {unlocked['1-2'] ? (
+      <section id="part-1-3" className="scroll-mt-44 mb-10">
+      <PartHeader number="1-3" title="槓桿實驗室" />
       <LeverLab />
+      <MiniQuiz partId="1-3" />
+      </section>
+      ) : (
+        <LockedPlaceholder partId="1-3" title="槓桿實驗室" requiresPartId="1-2" />
+      )}
     </div>
   );
 }
@@ -709,13 +980,17 @@ function LeverLab() {
    Section 2: Wheel & Axle, Pulleys (輪軸與滑輪)
    ========================================= */
 function WheelAxleSection() {
+  const { unlocked } = useContext(ProgressContext);
   return (
     <div className="animate-fade-in">
       <h2 className="text-2xl font-bold text-blue-800 mb-6 flex items-center gap-2 border-b pb-2">
         <RotateCw className="text-blue-500" /> 第 2 節:認識輪軸
       </h2>
 
-      <div className="mb-8">
+      {/* Part 2-1 */}
+      <section id="part-2-1" className="scroll-mt-44 mb-10">
+      <PartHeader number="2-1" title="輪軸剖面圖" />
+      <div className="mb-2">
         <Card title="剖面圖解析:輪軸是一種「隱形的槓桿」(課本 P.31)" icon={<Scale className="text-blue-500" />}>
           <div className="flex flex-col gap-6">
             <div className="w-full bg-slate-50 rounded-xl border-2 border-slate-200 p-4 flex items-center justify-center overflow-hidden">
@@ -741,8 +1016,14 @@ function WheelAxleSection() {
           </div>
         </Card>
       </div>
+      <MiniQuiz partId="2-1" nextPartId="2-2" />
+      </section>
 
-      <div className="mb-8">
+      {/* Part 2-2 */}
+      {unlocked['2-1'] ? (
+      <section id="part-2-2" className="scroll-mt-44 mb-10">
+      <PartHeader number="2-2" title="輪軸原理與應用" />
+      <div className="mb-2">
         <Card title="重點整理:輪軸原理與應用" icon={<BookOpen className="text-green-500" />}>
           <div className="grid grid-cols-2 gap-4 mb-4 max-w-2xl">
             <div className="aspect-square bg-green-50 rounded-lg overflow-hidden border border-slate-200 relative">
@@ -761,20 +1042,38 @@ function WheelAxleSection() {
           </ul>
         </Card>
       </div>
+      <MiniQuiz partId="2-2" nextPartId="2-3" />
+      </section>
+      ) : (
+        <LockedPlaceholder partId="2-2" title="輪軸原理與應用" requiresPartId="2-1" />
+      )}
 
+      {/* Part 2-3 */}
+      {unlocked['2-2'] ? (
+      <section id="part-2-3" className="scroll-mt-44 mb-10">
+      <PartHeader number="2-3" title="輪軸實驗室" />
       <WheelLab />
+      <MiniQuiz partId="2-3" />
+      </section>
+      ) : (
+        <LockedPlaceholder partId="2-3" title="輪軸實驗室" requiresPartId="2-2" />
+      )}
     </div>
   );
 }
 
 function PulleySection() {
+  const { unlocked } = useContext(ProgressContext);
   return (
     <div className="animate-fade-in">
       <h2 className="text-2xl font-bold text-blue-800 mb-6 flex items-center gap-2 border-b pb-2">
         <RotateCw className="text-blue-500" /> 第 3 節:認識滑輪
       </h2>
 
-      <div className="mb-8">
+      {/* Part 3-1 */}
+      <section id="part-3-1" className="scroll-mt-44 mb-10">
+      <PartHeader number="3-1" title="滑輪兄弟（定滑輪 vs 動滑輪）" />
+      <div className="mb-2">
         <Card title="重點整理:滑輪兄弟" icon={<BookOpen className="text-green-500" />}>
           <div className="grid grid-cols-2 gap-4 mb-4 max-w-2xl">
             <div className="aspect-square bg-blue-50 rounded-lg overflow-hidden border border-slate-200 relative">
@@ -792,8 +1091,19 @@ function PulleySection() {
           </ul>
         </Card>
       </div>
+      <MiniQuiz partId="3-1" nextPartId="3-2" />
+      </section>
 
+      {/* Part 3-2 */}
+      {unlocked['3-1'] ? (
+      <section id="part-3-2" className="scroll-mt-44 mb-10">
+      <PartHeader number="3-2" title="滑輪實驗室" />
       <PulleyLab />
+      <MiniQuiz partId="3-2" />
+      </section>
+      ) : (
+        <LockedPlaceholder partId="3-2" title="滑輪實驗室" requiresPartId="3-1" />
+      )}
     </div>
   );
 }
@@ -1043,12 +1353,16 @@ function PulleyLab() {
    Section 3: Gears & Chains (齒輪與鏈條)
    ========================================= */
 function GearSection() {
+  const { unlocked } = useContext(ProgressContext);
   return (
     <div className="animate-fade-in">
       <h2 className="text-2xl font-bold text-blue-800 mb-6 flex items-center gap-2 border-b pb-2">
         <Settings className="text-blue-500" /> 第 4 節:齒輪與鏈條 + 綜合應用
       </h2>
 
+      {/* Part 4-1 */}
+      <section id="part-4-1" className="scroll-mt-44 mb-10">
+      <PartHeader number="4-1" title="齒輪與鏈條" />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <Card title="重點整理:互相咬合的齒輪" icon={<BookOpen className="text-green-500" />}>
           <div className="aspect-[2/1] mb-4 bg-orange-50 rounded-lg overflow-hidden border border-slate-200">
@@ -1093,9 +1407,30 @@ function GearSection() {
         />
       </div>
 
-      <GearLab />
+      <MiniQuiz partId="4-1" nextPartId="4-2" />
+      </section>
 
+      {/* Part 4-2 */}
+      {unlocked['4-1'] ? (
+      <section id="part-4-2" className="scroll-mt-44 mb-10">
+      <PartHeader number="4-2" title="齒輪實驗室" />
+      <GearLab />
+      <MiniQuiz partId="4-2" nextPartId="4-3" />
+      </section>
+      ) : (
+        <LockedPlaceholder partId="4-2" title="齒輪實驗室" requiresPartId="4-1" />
+      )}
+
+      {/* Part 4-3 */}
+      {unlocked['4-2'] ? (
+      <section id="part-4-3" className="scroll-mt-44 mb-10">
+      <PartHeader number="4-3" title="綜合總整理" />
       <SynthesisBlock />
+      <MiniQuiz partId="4-3" />
+      </section>
+      ) : (
+        <LockedPlaceholder partId="4-3" title="綜合總整理" requiresPartId="4-2" />
+      )}
     </div>
   );
 }
