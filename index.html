@@ -1147,6 +1147,14 @@ function PulleySection() {
       ) : (
         <LockedPlaceholder partId="3-2" title="滑輪實驗室" requiresPartId="3-1" />
       )}
+
+      {/* Wordwall Game：3-2 通過後出現 */}
+      {unlocked['3-2'] && (
+        <WordwallGame
+          src="https://wordwall.net/tc/embed/34a2928692324200becafd3a500078a6?themeId=23&templateId=49&fontStackId=0"
+          sectionLabel="第 3 節 滑輪"
+        />
+      )}
     </div>
   );
 }
