@@ -56,9 +56,10 @@ function App() {
           </div>
           <nav className="mt-4 md:mt-0 flex flex-wrap gap-2 justify-center">
             <TabButton active={activeTab === 'textbook'} onClick={() => setActiveTab('textbook')} label="📚 電子課本" />
-            <TabButton active={activeTab === 'lever'} onClick={() => setActiveTab('lever')} label="1. 槓桿" />
-            <TabButton active={activeTab === 'wheel'} onClick={() => setActiveTab('wheel')} label="2. 輪軸與滑輪" />
-            <TabButton active={activeTab === 'gear'} onClick={() => setActiveTab('gear')} label="3. 齒輪與鏈條" />
+            <TabButton active={activeTab === 'lever'} onClick={() => setActiveTab('lever')} label="第1節 槓桿" />
+            <TabButton active={activeTab === 'wheel'} onClick={() => setActiveTab('wheel')} label="第2節 輪軸" />
+            <TabButton active={activeTab === 'pulley'} onClick={() => setActiveTab('pulley')} label="第3節 滑輪" />
+            <TabButton active={activeTab === 'gear'} onClick={() => setActiveTab('gear')} label="第4節 齒輪+綜合" />
             <TabButton active={activeTab === 'quiz'} onClick={() => setActiveTab('quiz')} label="單元總測驗" isQuiz />
           </nav>
         </div>
@@ -68,7 +69,8 @@ function App() {
       <main className="max-w-5xl mx-auto p-4 md:p-6 my-4 bg-white rounded-xl shadow-sm border border-slate-200 min-h-[80vh]">
         {activeTab === 'textbook' && <TextbookSection pdfUrl={pdfUrl} setPdfUrl={setPdfUrl} />}
         {activeTab === 'lever' && <LeverSection />}
-        {activeTab === 'wheel' && <WheelSection />}
+        {activeTab === 'wheel' && <WheelAxleSection />}
+        {activeTab === 'pulley' && <PulleySection />}
         {activeTab === 'gear' && <GearSection />}
         {activeTab === 'quiz' && <QuizSection />}
       </main>
@@ -487,7 +489,7 @@ function LeverSection() {
   return (
     <div className="animate-fade-in">
       <h2 className="text-2xl font-bold text-blue-800 mb-6 flex items-center gap-2 border-b pb-2">
-        <Scale className="text-blue-500" /> 活動 1:如何應用槓桿原理
+        <Scale className="text-blue-500" /> 第 1 節:認識槓桿原理
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -706,11 +708,11 @@ function LeverLab() {
 /* =========================================
    Section 2: Wheel & Axle, Pulleys (輪軸與滑輪)
    ========================================= */
-function WheelSection() {
+function WheelAxleSection() {
   return (
     <div className="animate-fade-in">
       <h2 className="text-2xl font-bold text-blue-800 mb-6 flex items-center gap-2 border-b pb-2">
-        <RotateCw className="text-blue-500" /> 活動 2:輪軸與滑輪如何便利生活
+        <RotateCw className="text-blue-500" /> 第 2 節:認識輪軸
       </h2>
 
       <div className="mb-8">
@@ -740,9 +742,9 @@ function WheelSection() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div className="mb-8">
         <Card title="重點整理:輪軸原理與應用" icon={<BookOpen className="text-green-500" />}>
-          <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-2 gap-4 mb-4 max-w-2xl">
             <div className="aspect-square bg-green-50 rounded-lg overflow-hidden border border-slate-200 relative">
                <span className="absolute top-2 left-2 text-xs font-bold text-green-700 bg-white px-2 py-1 rounded shadow-sm z-10">方向盤</span>
                <SvgSteeringWheel />
@@ -758,9 +760,23 @@ function WheelSection() {
             <li><strong>施力在軸:</strong>軸半徑小於輪半徑,所以<span className="text-red-600 font-bold">費力</span>,但能加快末端速度。(如竹蜻蜓、電風扇)</li>
           </ul>
         </Card>
+      </div>
 
+      <WheelLab />
+    </div>
+  );
+}
+
+function PulleySection() {
+  return (
+    <div className="animate-fade-in">
+      <h2 className="text-2xl font-bold text-blue-800 mb-6 flex items-center gap-2 border-b pb-2">
+        <RotateCw className="text-blue-500" /> 第 3 節:認識滑輪
+      </h2>
+
+      <div className="mb-8">
         <Card title="重點整理:滑輪兄弟" icon={<BookOpen className="text-green-500" />}>
-          <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-2 gap-4 mb-4 max-w-2xl">
             <div className="aspect-square bg-blue-50 rounded-lg overflow-hidden border border-slate-200 relative">
                <span className="absolute top-2 left-2 text-xs font-bold text-blue-700 bg-white px-2 py-1 rounded shadow-sm z-10">定滑輪</span>
                <SvgFixedPulleyAnim />
@@ -771,14 +787,12 @@ function WheelSection() {
             </div>
           </div>
           <ul className="space-y-2 list-disc ml-5 text-slate-700">
-            <li><strong>定滑輪:</strong>固定在一個地方不移動。<br/><span className="text-blue-600 font-bold">不省力</span>,但能<span className="text-blue-600 font-bold">改變施力方向</span>。</li>
-            <li><strong>動滑輪:</strong>會跟著重物一起上下移動。<br/>能<span className="text-green-600 font-bold">省一半的力</span>,但<span className="text-red-500 font-bold">不能改變施力方向</span>。</li>
+            <li><strong>定滑輪:</strong>固定在一個地方不移動。<br/><span className="text-blue-600 font-bold">不省力</span>,但能<span className="text-blue-600 font-bold">改變施力方向</span>。生活中常見於升旗桿、窗簾。</li>
+            <li><strong>動滑輪:</strong>會跟著重物一起上下移動。<br/>能<span className="text-green-600 font-bold">省一半的力</span>,但<span className="text-red-500 font-bold">不能改變施力方向</span>。生活中常見於起重機、吊掛系統。</li>
           </ul>
         </Card>
       </div>
 
-      <WheelLab />
-      <div className="my-8"></div>
       <PulleyLab />
     </div>
   );
@@ -1032,7 +1046,7 @@ function GearSection() {
   return (
     <div className="animate-fade-in">
       <h2 className="text-2xl font-bold text-blue-800 mb-6 flex items-center gap-2 border-b pb-2">
-        <Settings className="text-blue-500" /> 活動 3:齒輪與鏈條傳送動力
+        <Settings className="text-blue-500" /> 第 4 節:齒輪與鏈條 + 綜合應用
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -1080,6 +1094,95 @@ function GearSection() {
       </div>
 
       <GearLab />
+
+      <SynthesisBlock />
+    </div>
+  );
+}
+
+function SynthesisBlock() {
+  return (
+    <div className="mt-10 bg-gradient-to-br from-blue-50 via-white to-purple-50 rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="bg-blue-100 p-4 border-b border-blue-200">
+        <h3 className="text-xl font-bold text-blue-900 flex items-center gap-2">
+          <Wrench className="w-6 h-6" /> 綜合應用:四大簡單機械總整理
+        </h3>
+      </div>
+      <div className="p-6">
+        <p className="mb-6 text-slate-700 text-base leading-relaxed">
+          四節課我們認識了 <strong>槓桿、輪軸、滑輪、齒輪與鏈條</strong> 四大簡單機械。把它們放在一起比較,就能看出每一種機械的特長與限制!
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[700px]">
+            <thead>
+              <tr className="bg-slate-100 text-slate-700">
+                <th className="p-3 border-b border-slate-200 font-bold">機械</th>
+                <th className="p-3 border-b border-slate-200 font-bold">主要功能</th>
+                <th className="p-3 border-b border-slate-200 font-bold">省力嗎？</th>
+                <th className="p-3 border-b border-slate-200 font-bold">改變方向？</th>
+                <th className="p-3 border-b border-slate-200 font-bold">生活實例</th>
+              </tr>
+            </thead>
+            <tbody className="text-slate-700">
+              <tr className="hover:bg-slate-50">
+                <td className="p-3 border-b border-slate-100 font-black text-amber-700">槓桿</td>
+                <td className="p-3 border-b border-slate-100">撐起或移動重物</td>
+                <td className="p-3 border-b border-slate-100">視類型(省力/費力/等臂)</td>
+                <td className="p-3 border-b border-slate-100">部分可改變</td>
+                <td className="p-3 border-b border-slate-100">開瓶器、鑷子、翹翹板</td>
+              </tr>
+              <tr className="hover:bg-slate-50">
+                <td className="p-3 border-b border-slate-100 font-black text-green-700">輪軸</td>
+                <td className="p-3 border-b border-slate-100">旋轉省力</td>
+                <td className="p-3 border-b border-slate-100">施力在輪 ⇒ 省力</td>
+                <td className="p-3 border-b border-slate-100">否</td>
+                <td className="p-3 border-b border-slate-100">方向盤、螺絲起子、門把</td>
+              </tr>
+              <tr className="hover:bg-slate-50">
+                <td className="p-3 border-b border-slate-100 font-black text-blue-700">定滑輪</td>
+                <td className="p-3 border-b border-slate-100">改變施力方向</td>
+                <td className="p-3 border-b border-slate-100">否</td>
+                <td className="p-3 border-b border-slate-100">是 (與物體相反)</td>
+                <td className="p-3 border-b border-slate-100">升旗桿、窗簾</td>
+              </tr>
+              <tr className="hover:bg-slate-50">
+                <td className="p-3 border-b border-slate-100 font-black text-emerald-700">動滑輪</td>
+                <td className="p-3 border-b border-slate-100">省力拉重物</td>
+                <td className="p-3 border-b border-slate-100">省一半的力</td>
+                <td className="p-3 border-b border-slate-100">否 (與物體同向)</td>
+                <td className="p-3 border-b border-slate-100">起重機、吊掛系統</td>
+              </tr>
+              <tr className="hover:bg-slate-50">
+                <td className="p-3 border-b border-slate-100 font-black text-red-700">齒輪/鏈條</td>
+                <td className="p-3 border-b border-slate-100">傳遞動力、調整轉速</td>
+                <td className="p-3 border-b border-slate-100">視齒數比</td>
+                <td className="p-3 border-b border-slate-100">咬合相反 / 鏈條相同</td>
+                <td className="p-3 border-b border-slate-100">時鐘、腳踏車、電扶梯</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div className="mt-6 bg-amber-50 p-4 rounded-lg border border-amber-300 text-amber-900">
+          <Lightbulb className="inline-block w-5 h-5 text-amber-600 mr-1 -mt-1" />
+          <strong>核心觀念—「功不變」:</strong>所有簡單機械都遵守同一條規則—— 省力的代價是<strong>要拉得更遠</strong>;想拉得快、拉得輕,就要花<strong>更大的力氣</strong>。世界上沒有「又省力又省距離」的免費午餐!
+        </div>
+
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+          <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+            <strong className="text-blue-800">🔍 觀察任務</strong>
+            <p className="text-slate-700 mt-1">回家找一找,廚房、玩具、文具裡有哪些簡單機械?把它畫下來!</p>
+          </div>
+          <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+            <strong className="text-green-800">🧠 思考挑戰</strong>
+            <p className="text-slate-700 mt-1">為什麼腳踏車要「前大齒輪、後小齒輪」?換成相反會怎樣?</p>
+          </div>
+          <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
+            <strong className="text-purple-800">🔧 動手創造</strong>
+            <p className="text-slate-700 mt-1">用紙杯、吸管、繩子,做一個能拉起鉛筆盒的小滑輪!</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
