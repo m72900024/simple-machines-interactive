@@ -1093,6 +1093,14 @@ function WheelAxleSection() {
       ) : (
         <LockedPlaceholder partId="2-3" title="輪軸實驗室" requiresPartId="2-2" />
       )}
+
+      {/* Wordwall Game：2-3 通過後出現 */}
+      {unlocked['2-3'] && (
+        <WordwallGame
+          src="https://wordwall.net/tc/embed/07810805580f4421bbbddacb14fbc6b4?themeId=1&templateId=5&fontStackId=0"
+          sectionLabel="第 2 節 輪軸"
+        />
+      )}
     </div>
   );
 }
