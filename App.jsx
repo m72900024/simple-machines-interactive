@@ -1537,6 +1537,11 @@ function PulleySection1() {
           </div>
         </Card>
       </section>
+
+      {/* Wordwall：第 5 節活動（3-1 通過後出現） */}
+      <WordwallGameGate partId="3-1"
+        src="https://wordwall.net/tc/embed/6afc02f306dc42b5915f8e70b62e8f8c?themeId=51&templateId=2&fontStackId=0"
+        sectionLabel="定/動滑輪配對" />
     </div>
   );
 }
