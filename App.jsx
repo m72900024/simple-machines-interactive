@@ -821,38 +821,115 @@ function LeverSection1() {
         <LockedPlaceholder partId="1-2" title="槓桿三種類型" requiresPartId="1-1" />
       )}
 
-      {/* 補充：我家槓桿大搜尋 - 自我檢測 */}
-      {unlocked['1-2'] && (
-        <section className="mb-10">
-          <Card title="我家槓桿大搜尋:你能分辨類型嗎?" icon={<Gamepad2 className="text-purple-500" />}>
-            <p className="text-slate-600 text-sm mb-4">看看 6 個生活中的工具,試試看用「省力 / 費力 / 等臂」三類來分辨它們吧!</p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              <LeverQuizCard emoji="✂️" name="剪刀" answer="省力" hint="手抓的握柄長(施力臂大)、刀刃短(抗力臂小) → 省力剪紙" />
-              <LeverQuizCard emoji="🧃" name="開瓶器" answer="省力" hint="長長的握柄是施力臂、瓶蓋邊是抗力臂 → 施力臂 > 抗力臂,省力" />
-              <LeverQuizCard emoji="⚖️" name="翹翹板" answer="等臂" hint="支點在中間,兩邊距離一樣 → 施力臂 = 抗力臂,不省力也不費力" />
-              <LeverQuizCard emoji="🪶" name="天平" answer="等臂" hint="兩端到中央軸距離相等,用來量重量,所以一定是等臂" />
-              <LeverQuizCard emoji="🥢" name="筷子" answer="費力" hint="手指出力地方靠近支點(施力臂小)、夾食物的尖端遠(抗力臂大) → 費力,但能精準" />
-              <LeverQuizCard emoji="🤏" name="鑷子" answer="費力" hint="手捏的地方就是支點,施力臂幾乎等於 0 → 費力,但能夾很小的東西" />
-            </div>
-            <p className="mt-4 text-xs text-slate-500">💡 答對率 5/6 以上代表你掌握重點囉!</p>
-          </Card>
-        </section>
-      )}
+      {/* 補充：我家槓桿大搜尋 - 自我檢測（含答錯統計） */}
+      {unlocked['1-2'] && <LeverQuizPanel />}
     </div>
   );
 }
 
-/* 槓桿自我檢測小卡 */
-function LeverQuizCard({ emoji, name, answer, hint }) {
+/* 自我檢測面板：統計第一次答對 / 總共答錯次數 */
+function LeverQuizPanel() {
+  const QUIZ_ITEMS = [
+    { emoji: '✂️', name: '剪刀',   answer: '省力', hint: '手抓的握柄長(施力臂大)、刀刃短(抗力臂小) → 省力剪紙' },
+    { emoji: '🧃', name: '開瓶器', answer: '省力', hint: '長長的握柄是施力臂、瓶蓋邊是抗力臂 → 施力臂 > 抗力臂,省力' },
+    { emoji: '⚖️', name: '翹翹板', answer: '等臂', hint: '支點在中間,兩邊距離一樣 → 施力臂 = 抗力臂,不省力也不費力' },
+    { emoji: '🪶', name: '天平',   answer: '等臂', hint: '兩端到中央軸距離相等,用來量重量,所以一定是等臂' },
+    { emoji: '🥢', name: '筷子',   answer: '費力', hint: '手指出力地方靠近支點(施力臂小)、夾食物的尖端遠(抗力臂大) → 費力,但能精準' },
+    { emoji: '🤏', name: '鑷子',   answer: '費力', hint: '手捏的地方就是支點,施力臂幾乎等於 0 → 費力,但能夾很小的東西' },
+  ];
+  const total = QUIZ_ITEMS.length;
+  const [results, setResults] = useState({}); // { name: { attempts, firstTry } }
+  const [seq, setSeq] = useState(0); // 重置遞增 → 強迫 LeverQuizCard 重 mount
+  const onCorrect = (name, attempts) => {
+    setResults(r => ({ ...r, [name]: { attempts, firstTry: attempts === 1 } }));
+  };
+  const reset = () => { setResults({}); setSeq(s => s + 1); };
+
+  const done = Object.keys(results).length;
+  const firstTry = Object.values(results).filter(r => r.firstTry).length;
+  const totalWrong = Object.values(results).reduce((s, r) => s + (r.attempts - 1), 0);
+  const finished = done === total;
+
+  // 評語
+  let comment = null;
+  if (finished) {
+    if (firstTry === total) comment = { tone: 'gold',   text: '✨ 太厲害了!全部第一次就答對,你真的會分辨槓桿類型!' };
+    else if (firstTry >= 4)  comment = { tone: 'green',  text: '👍 不錯!大部分都第一次就對,有幾題可以再複習一下。' };
+    else if (firstTry >= 2)  comment = { tone: 'amber',  text: '🤔 有些題目你是用「猜」的喔,回上面重點整理區再看一次「施力臂 vs 抗力臂」。' };
+    else                     comment = { tone: 'red',    text: '⚠️ 點點看每題答對後的「再想想」提示,理解「施力臂 vs 抗力臂」再重新挑戰!' };
+  }
+  const toneMap = {
+    gold:  'bg-amber-50 border-amber-300 text-amber-900',
+    green: 'bg-green-50 border-green-300 text-green-900',
+    amber: 'bg-amber-50 border-amber-300 text-amber-900',
+    red:   'bg-red-50 border-red-300 text-red-900',
+  };
+
+  return (
+    <section className="mb-10">
+      <Card title="我家槓桿大搜尋:你能分辨類型嗎?" icon={<Gamepad2 className="text-purple-500" />}>
+        <p className="text-slate-600 text-sm mb-4">看看 6 個生活中的工具,試試看用「省力 / 費力 / 等臂」三類來分辨它們吧!</p>
+
+        {/* 統計列 */}
+        <div className="mb-4 grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 text-center">
+            <div className="text-xs text-slate-500">已答對</div>
+            <div className="font-black text-lg text-slate-800">{done} / {total}</div>
+          </div>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-2 text-center">
+            <div className="text-xs text-green-700">第一次就對</div>
+            <div className="font-black text-lg text-green-800">{firstTry}</div>
+          </div>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-2 text-center">
+            <div className="text-xs text-red-700">總共答錯次數</div>
+            <div className="font-black text-lg text-red-800">{totalWrong}</div>
+          </div>
+          <button onClick={reset} disabled={done === 0}
+            className="bg-blue-100 hover:bg-blue-200 border border-blue-300 rounded-lg p-2 text-blue-800 font-bold disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1">
+            <RotateCcw className="w-4 h-4" /> 重新挑戰
+          </button>
+        </div>
+
+        {/* 6 張卡 */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {QUIZ_ITEMS.map(item => (
+            <LeverQuizCard key={`${seq}-${item.name}`} {...item} onCorrect={onCorrect} />
+          ))}
+        </div>
+
+        {/* 完成評語 */}
+        {comment && (
+          <div className={`mt-4 p-3 rounded-lg border ${toneMap[comment.tone]}`}>
+            {comment.text}
+          </div>
+        )}
+      </Card>
+    </section>
+  );
+}
+
+/* 槓桿自我檢測小卡（追蹤答錯次數） */
+function LeverQuizCard({ emoji, name, answer, hint, onCorrect }) {
   const [picked, setPicked] = useState(null);
-  const correct = picked === answer;
+  const [attempts, setAttempts] = useState(0);
+  const [solved, setSolved] = useState(false);
   const opts = [
     { key: '省力', label: '省力槓桿', color: 'green' },
     { key: '等臂', label: '等臂槓桿', color: 'blue' },
     { key: '費力', label: '費力槓桿', color: 'red' },
   ];
+  const submit = (key) => {
+    if (solved) return;
+    setPicked(key);
+    const newAttempts = attempts + 1;
+    setAttempts(newAttempts);
+    if (key === answer) {
+      setSolved(true);
+      onCorrect && onCorrect(name, newAttempts);
+    }
+  };
   return (
-    <div className="rounded-lg border-2 border-slate-200 bg-white p-4">
+    <div className={`rounded-lg border-2 p-4 ${solved ? 'border-green-300 bg-green-50/30' : 'border-slate-200 bg-white'}`}>
       <div className="text-center mb-2">
         <div className="text-4xl">{emoji}</div>
         <div className="font-bold text-slate-800 mt-1">{name}</div>
@@ -860,25 +937,33 @@ function LeverQuizCard({ emoji, name, answer, hint }) {
       <div className="grid grid-cols-1 gap-1 mb-2">
         {opts.map(({ key, label, color }) => {
           const isPicked = picked === key;
-          const isCorrect = isPicked && correct;
-          const isWrong = isPicked && !correct;
-          const idle = !isPicked && (!picked || !correct);
+          const isCorrect = solved && isPicked;
+          const isWrong = !solved && isPicked;
+          let cls;
+          if (isCorrect) cls = 'border-green-500 bg-green-100 text-green-800';
+          else if (isWrong) cls = 'border-red-500 bg-red-100 text-red-800';
+          else if (solved) cls = 'border-slate-200 bg-slate-50 text-slate-400';
+          else cls = `border-slate-200 hover:border-${color}-400 hover:bg-${color}-50 text-slate-700`;
           return (
-            <button key={key} onClick={() => setPicked(key)} disabled={correct}
-              className={`py-1.5 rounded text-sm font-bold border-2 transition-colors ${
-                isCorrect ? 'border-green-500 bg-green-100 text-green-800' :
-                isWrong ? 'border-red-500 bg-red-100 text-red-800' :
-                idle ? `border-slate-200 hover:border-${color}-400 hover:bg-${color}-50 text-slate-700` :
-                'border-slate-200 bg-slate-50 text-slate-400'
-              }`}>
+            <button key={key} onClick={() => submit(key)} disabled={solved}
+              className={`py-1.5 rounded text-sm font-bold border-2 transition-colors ${cls}`}>
               {label}
             </button>
           );
         })}
       </div>
-      {picked && (
-        <div className={`text-xs p-2 rounded ${correct ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
-          {correct ? '✓ 答對了!' : '✗ 再想想'} <span className="text-slate-600">{hint}</span>
+      {solved && (
+        <div className="text-xs p-2 rounded bg-green-50 text-green-800">
+          <strong>✓ 答對了!</strong>
+          <span className={attempts === 1 ? 'ml-1 text-emerald-700 font-bold' : 'ml-1 text-amber-700 font-bold'}>
+            ({attempts === 1 ? '第一次就對 ⭐' : `第 ${attempts} 次才對`})
+          </span>
+          <div className="text-slate-600 mt-1">{hint}</div>
+        </div>
+      )}
+      {!solved && picked && (
+        <div className="text-xs p-2 rounded bg-red-50 text-red-800">
+          ✗ 不是這個,再試試看 <span className="text-slate-500">(已試 {attempts} 次)</span>
         </div>
       )}
     </div>
