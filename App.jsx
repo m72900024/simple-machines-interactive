@@ -280,8 +280,7 @@ export default function App() {
 }
 
 function AppInner() {
-  const [activeTab, setActiveTab] = useState('textbook');
-  const [pdfUrl, setPdfUrl] = useState(null);
+  const [activeTab, setActiveTab] = useState('s1');
   const { isSectionAccessible, unlocked } = useContext(ProgressContext);
 
   const tryTab = (tab) => {
@@ -317,7 +316,6 @@ function AppInner() {
               <p className="mt-1 text-blue-100 text-xs md:text-sm">第一單元互動學習網 ｜ 闖關式學習</p>
             </div>
             <nav className="flex flex-wrap gap-2 justify-center">
-              <TabButton active={activeTab === 'textbook'} onClick={() => tryTab('textbook')} label="📚 電子課本" />
               <TabButton active={activeTab === 's1'} onClick={() => tryTab('s1')} label="1 槓桿(一)" />
               <TabButton active={activeTab === 's2'} onClick={() => tryTab('s2')} label="2 槓桿(二)" locked={!isSectionAccessible('s2')} />
               <TabButton active={activeTab === 's3'} onClick={() => tryTab('s3')} label="3 輪軸(一)" locked={!isSectionAccessible('s3')} />
@@ -334,7 +332,6 @@ function AppInner() {
 
       {/* Main Content */}
       <main className="max-w-5xl mx-auto p-4 md:p-6 my-4 bg-white rounded-xl shadow-sm border border-slate-200 min-h-[80vh]">
-        {activeTab === 'textbook' && <TextbookSection pdfUrl={pdfUrl} setPdfUrl={setPdfUrl} />}
         {activeTab === 's1' && <LeverSection1 />}
         {activeTab === 's2' && (isSectionAccessible('s2') ? <LeverSection2 /> : <SectionLockedNotice section="s2" missing={missingFor('s2')} />)}
         {activeTab === 's3' && (isSectionAccessible('s3') ? <WheelAxleSection1 /> : <SectionLockedNotice section="s3" missing={missingFor('s3')} />)}
@@ -705,57 +702,6 @@ const SvgEscalator = () => (
   </svg>
 );
 
-/* =========================================
-   Section: Textbook (電子課本)
-   ========================================= */
-function TextbookSection({ pdfUrl, setPdfUrl }) {
-  const [error, setError] = useState('');
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (file.type !== 'application/pdf') {
-      setError('請上傳 PDF 格式的檔案喔！');
-      return;
-    }
-    setError('');
-    const fileUrl = URL.createObjectURL(file);
-    setPdfUrl(fileUrl);
-  };
-
-  return (
-    <div className="animate-fade-in h-full flex flex-col">
-      <h2 className="text-2xl font-bold text-blue-800 mb-6 flex items-center gap-2 border-b pb-2">
-        <FileText className="text-blue-500" /> 電子課本閱讀區
-      </h2>
-      {!pdfUrl ? (
-        <div className="bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl p-12 text-center flex flex-col items-center justify-center flex-grow min-h-[50vh]">
-          <FileDown className="w-16 h-16 text-slate-400 mb-4" />
-          <h3 className="text-xl font-bold text-slate-700 mb-2">上傳您的電子課本</h3>
-          <p className="text-slate-500 mb-6">請選擇 PDF 檔案進行上傳,上傳後即可直接在這裡閱讀課本內容。</p>
-          <label className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold transition-colors shadow-md hover:shadow-lg">
-            選擇 PDF 檔案
-            <input type="file" accept="application/pdf" className="hidden" onChange={handleFileChange} />
-          </label>
-          {error && <p className="text-red-500 mt-4 bg-red-50 px-4 py-2 rounded-md">{error}</p>}
-        </div>
-      ) : (
-        <div className="flex flex-col flex-grow h-[70vh]">
-          <div className="flex justify-between items-center mb-4 bg-slate-100 p-3 rounded-lg border border-slate-200">
-            <span className="text-slate-700 font-medium flex items-center gap-2">
-              <CheckCircle2 className="text-green-500 w-5 h-5"/> 課本已載入
-            </span>
-            <label className="cursor-pointer bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-md text-sm font-bold transition-colors">
-              重新選擇檔案
-              <input type="file" accept="application/pdf" className="hidden" onChange={handleFileChange} />
-            </label>
-          </div>
-          <iframe src={pdfUrl} className="w-full h-full rounded-lg border border-slate-300 shadow-sm" title="PDF Viewer" />
-        </div>
-      )}
-    </div>
-  );
-}
 
 /* =========================================
    Section s1: 第 1 節 槓桿(一)：三要素與三類型
@@ -874,6 +820,59 @@ function LeverSection1() {
       ) : (
         <LockedPlaceholder partId="1-2" title="槓桿三種類型" requiresPartId="1-1" />
       )}
+
+      {/* 補充：我家槓桿大搜尋 - 自我檢測 */}
+      {unlocked['1-2'] && (
+        <section className="mb-10">
+          <Card title="我家槓桿大搜尋:你能分辨類型嗎?" icon={<Gamepad2 className="text-purple-500" />}>
+            <p className="text-slate-600 text-sm mb-4">看看 6 個生活中的工具,你能正確判斷它們是「第幾類槓桿」嗎?</p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <LeverQuizCard emoji="✂️" name="剪刀" answer="一" hint="支點在中間(轉軸),施力與抗力在兩側" />
+              <LeverQuizCard emoji="🧃" name="開瓶器" answer="二" hint="支點(瓶蓋邊)→ 抗力(瓶蓋)→ 施力(手),抗力在中" />
+              <LeverQuizCard emoji="🥢" name="筷子" answer="三" hint="支點(手腕端)→ 施力(手指)→ 抗力(夾頭),施力在中" />
+              <LeverQuizCard emoji="🎣" name="釣魚竿" answer="三" hint="支點(手後端)→ 施力(手前端)→ 抗力(魚),施力在中" />
+              <LeverQuizCard emoji="🔨" name="拔釘鎚" answer="一" hint="支點(鎚頭觸地點)→ 抗力(釘子)→ 施力(握柄),支點在中" />
+              <LeverQuizCard emoji="🥄" name="獨輪車" answer="二" hint="支點(輪)→ 抗力(載物)→ 施力(扶把),抗力在中" />
+            </div>
+          </Card>
+        </section>
+      )}
+    </div>
+  );
+}
+
+/* 槓桿自我檢測小卡 */
+function LeverQuizCard({ emoji, name, answer, hint }) {
+  const [picked, setPicked] = useState(null);
+  const correct = picked === answer;
+  return (
+    <div className="rounded-lg border-2 border-slate-200 bg-white p-4">
+      <div className="text-center mb-2">
+        <div className="text-4xl">{emoji}</div>
+        <div className="font-bold text-slate-800 mt-1">{name}</div>
+      </div>
+      <div className="grid grid-cols-3 gap-1 mb-2">
+        {['一', '二', '三'].map(opt => {
+          const isPicked = picked === opt;
+          const isCorrect = isPicked && correct;
+          const isWrong = isPicked && !correct;
+          return (
+            <button key={opt} onClick={() => setPicked(opt)} disabled={correct}
+              className={`py-1.5 rounded text-sm font-bold border-2 transition-colors ${
+                isCorrect ? 'border-green-500 bg-green-100 text-green-800' :
+                isWrong ? 'border-red-500 bg-red-100 text-red-800' :
+                'border-slate-200 hover:border-blue-400 hover:bg-blue-50 text-slate-700'
+              }`}>
+              第{opt}類
+            </button>
+          );
+        })}
+      </div>
+      {picked && (
+        <div className={`text-xs p-2 rounded ${correct ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+          {correct ? '✓ 答對了!' : '✗ 再想想'} <span className="text-slate-600">{hint}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -895,11 +894,104 @@ function LeverSection2() {
         <MiniQuiz partId="1-3" />
       </section>
 
+      {/* 補充 1：數據記錄表（互動式：學生輸入數據,自動算「力 × 力臂」） */}
+      <section className="mb-10">
+        <LeverDataLog />
+      </section>
+
+      {/* 補充 2：功不變伏筆卡 */}
+      <section className="mb-10">
+        <Card title="想一想:省力換到了什麼?" icon={<Sparkles className="text-purple-600" />}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+              <div className="font-bold text-green-800 mb-2">✨ 省力槓桿(開瓶器)</div>
+              <p className="text-sm text-slate-700">用 <strong>10g</strong> 的力,抬起 <strong>30g</strong> 的物體。</p>
+              <p className="text-sm text-slate-700 mt-1">代價:施力端要走<strong className="text-red-700">3 倍</strong>的距離。</p>
+            </div>
+            <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+              <div className="font-bold text-red-800 mb-2">⚡ 費力槓桿(筷子)</div>
+              <p className="text-sm text-slate-700">用 <strong>30g</strong> 的力,只能抬起 <strong>10g</strong>。</p>
+              <p className="text-sm text-slate-700 mt-1">換到:夾取距離可以<strong className="text-blue-700">3 倍精準</strong>。</p>
+            </div>
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <div className="font-bold text-blue-800 mb-2">⚖️ 等臂槓桿(翹翹板)</div>
+              <p className="text-sm text-slate-700">用 <strong>20g</strong> 抬 <strong>20g</strong>,力相等。</p>
+              <p className="text-sm text-slate-700 mt-1">換到:只是<strong className="text-blue-700">改變方向</strong>。</p>
+            </div>
+          </div>
+          <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-amber-50 rounded-lg border border-purple-200">
+            <Lightbulb className="inline w-5 h-5 text-purple-600 mr-1" />
+            <strong className="text-purple-900">「功不變」核心觀念:</strong>
+            <p className="text-sm mt-1 text-slate-700">力 × 施力臂 = 抗力 × 抗力臂。<strong>省了力,就要走更遠的距離;省了距離,就要花更大的力</strong>。後面三節(輪軸/滑輪/齒輪)我們會發現——所有的簡單機械都遵守這條鐵律!</p>
+          </div>
+        </Card>
+      </section>
+
       {/* Wordwall Game：1-3 通過後出現 */}
       <WordwallGameGate partId="1-3"
         src="https://wordwall.net/tc/embed/c03fb77019e24157ac9164cf8d9f6385?themeId=23&templateId=49&fontStackId=0"
         sectionLabel="槓桿" />
     </div>
+  );
+}
+
+/* 槓桿數據記錄表（學生可填,自動驗算） */
+function LeverDataLog() {
+  const [rows, setRows] = useState([
+    { rWeight: 20, rArm: 3, eArm: 1, eWeight: '' },
+    { rWeight: 20, rArm: 3, eArm: 2, eWeight: '' },
+    { rWeight: 20, rArm: 3, eArm: 6, eWeight: '' },
+  ]);
+  const update = (i, field, val) => {
+    const copy = [...rows];
+    copy[i][field] = val === '' ? '' : Number(val);
+    setRows(copy);
+  };
+  return (
+    <Card title="實驗記錄表:槓桿尺平衡實驗" icon={<FileText className="text-blue-500" />}>
+      <p className="text-slate-600 text-sm mb-4">填入「施力端砝碼數」,系統會自動算「施力 × 施力臂」並判斷是否平衡。標準答案:抗力端 20g × 第 3 格 = 60(g·格)。</p>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm border-collapse min-w-[640px]">
+          <thead>
+            <tr className="bg-slate-100 text-slate-700">
+              <th className="p-2 border border-slate-300">試驗</th>
+              <th className="p-2 border border-slate-300">抗力(g)</th>
+              <th className="p-2 border border-slate-300">抗力臂(格)</th>
+              <th className="p-2 border border-slate-300">施力臂(格)</th>
+              <th className="p-2 border border-slate-300">你填:施力(g)</th>
+              <th className="p-2 border border-slate-300">力×力臂</th>
+              <th className="p-2 border border-slate-300">是否平衡</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => {
+              const torqueR = r.rWeight * r.rArm;
+              const torqueE = r.eWeight === '' ? null : r.eWeight * r.eArm;
+              const balanced = torqueE !== null && torqueE === torqueR;
+              return (
+                <tr key={i} className="hover:bg-slate-50">
+                  <td className="p-2 border border-slate-300 text-center font-bold">{['①', '②', '③'][i]}</td>
+                  <td className="p-2 border border-slate-300 text-center">{r.rWeight}</td>
+                  <td className="p-2 border border-slate-300 text-center">{r.rArm}</td>
+                  <td className="p-2 border border-slate-300 text-center bg-blue-50/30">{r.eArm}</td>
+                  <td className="p-2 border border-slate-300 text-center">
+                    <input type="number" min="0" max="200" value={r.eWeight}
+                      onChange={e => update(i, 'eWeight', e.target.value)}
+                      className="w-20 px-2 py-1 border border-slate-300 rounded text-center"
+                      placeholder="輸入" />
+                  </td>
+                  <td className="p-2 border border-slate-300 text-center font-bold">{torqueE ?? '—'}</td>
+                  <td className={`p-2 border border-slate-300 text-center font-bold ${balanced ? 'text-green-700 bg-green-50/50' : torqueE === null ? 'text-slate-400' : 'text-red-600 bg-red-50/50'}`}>
+                    {torqueE === null ? '—' : (balanced ? '✓ 平衡' : '✗ 失衡')}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-3 text-xs text-slate-500">提示:第 1 格要 60g、第 2 格要 30g、第 6 格要 10g(自己算算看為什麼)</p>
+    </Card>
   );
 }
 
@@ -1096,6 +1188,42 @@ function WheelAxleSection1() {
       ) : (
         <LockedPlaceholder partId="2-2" title="輪軸原理與應用" requiresPartId="2-1" />
       )}
+
+      {/* 補充：輪軸 ↔ 槓桿 對照圖 */}
+      {unlocked['2-2'] && (
+        <section className="mb-10">
+          <Card title="把輪軸「攤平」就是一根槓桿!" icon={<Sparkles className="text-purple-600" />}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <div className="aspect-[2/1] bg-blue-50 rounded-lg overflow-hidden border border-slate-200 mb-2">
+                  <SvgLeverBasic />
+                </div>
+                <div className="text-center font-bold text-blue-800">槓桿(只能擺一下下)</div>
+                <ul className="text-xs text-slate-600 mt-2 ml-4 list-disc space-y-0.5">
+                  <li>支點固定 — 棒子搖一搖就停</li>
+                  <li>施力臂 = 從支點到施力點的距離</li>
+                  <li>抗力臂 = 從支點到抗力點的距離</li>
+                </ul>
+              </div>
+              <div>
+                <div className="aspect-[2/1] bg-green-50 rounded-lg overflow-hidden border border-slate-200 mb-2 flex items-center justify-center">
+                  <div className="w-32 h-32"><SvgSteeringWheel /></div>
+                </div>
+                <div className="text-center font-bold text-green-800">輪軸(可以一直旋轉)</div>
+                <ul className="text-xs text-slate-600 mt-2 ml-4 list-disc space-y-0.5">
+                  <li>支點 = 輪軸中心(永遠固定)</li>
+                  <li>輪半徑 = 施力臂(放大版的施力臂)</li>
+                  <li>軸半徑 = 抗力臂(縮小版的抗力臂)</li>
+                </ul>
+              </div>
+            </div>
+            <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg text-sm text-purple-900">
+              <Lightbulb className="inline w-4 h-4 text-purple-600 mr-1" />
+              <strong>關鍵連結:</strong>槓桿的「施力臂、抗力臂」在輪軸裡變成「輪半徑、軸半徑」。同樣是「臂越長越省力」,只是輪軸把這個原理變成<strong>360 度都能轉</strong>!
+            </div>
+          </Card>
+        </section>
+      )}
     </div>
   );
 }
@@ -1117,9 +1245,62 @@ function WheelAxleSection2() {
         <MiniQuiz partId="2-3" />
       </section>
 
+      {/* 補充 1：四種輪軸生活應用 */}
+      <section className="mb-10">
+        <Card title="生活中的輪軸:四個你天天看到的例子" icon={<Lightbulb className="text-amber-500" />}>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <WheelExampleCard emoji="🚗" name="汽車方向盤" force="輪" effect="省力(輕鬆轉動車輪)" />
+            <WheelExampleCard emoji="🔩" name="螺絲起子" force="輪" effect="省力(把手粗,輕轉鎖緊)" />
+            <WheelExampleCard emoji="🚰" name="水龍頭" force="輪" effect="省力(把手大,輕轉開關水)" />
+            <WheelExampleCard emoji="✏️" name="削鉛筆機" force="輪" effect="省力(手轉小把手 → 內部多齒輪+刀)" />
+            <WheelExampleCard emoji="🎣" name="釣魚捲線器" force="輪" effect="省距離(轉一圈,線收多公分)" />
+            <WheelExampleCard emoji="🚲" name="腳踏車踏板" force="輪" effect="省力(踏板曲柄=施力臂)" />
+            <WheelExampleCard emoji="🌬️" name="電風扇" force="軸" effect="費力換速度(扇葉末端飛快)" />
+            <WheelExampleCard emoji="🪁" name="竹蜻蜓" force="軸" effect="費力換速度(末端旋翼快速)" />
+          </div>
+        </Card>
+      </section>
+
+      {/* 補充 2：工程考量 */}
+      <section className="mb-10">
+        <Card title="工程小思考:為什麼方向盤要設計這麼大?" icon={<Sparkles className="text-purple-600" />}>
+          <div className="space-y-3 text-slate-700">
+            <p>方向盤的<strong className="text-green-700">輪半徑</strong>大概是<strong>20-22 公分</strong>,而連到車輪的<strong className="text-orange-700">軸半徑</strong>只有<strong>2-3 公分</strong>左右。</p>
+            <p>輪半徑是軸半徑的<strong className="text-purple-700">約 10 倍</strong> → 駕駛只需<strong>1/10 的力</strong>就能轉動車輪。</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+              <div className="bg-amber-50 p-3 rounded-lg border border-amber-200">
+                <strong className="text-amber-900">如果方向盤縮小成 5 公分?</strong>
+                <p className="text-sm mt-1 text-slate-700">省力倍數從 10 倍掉到 2 倍,駕駛要用 5 倍的力,長途駕駛會手痠。</p>
+              </div>
+              <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                <strong className="text-blue-900">如果方向盤大到 1 公尺?</strong>
+                <p className="text-sm mt-1 text-slate-700">省力又增加,但<strong>佔空間、轉一圈要動很長距離</strong>,反而難操作。</p>
+              </div>
+            </div>
+            <p className="text-sm bg-purple-50 p-3 rounded-lg border border-purple-200 mt-2">
+              <Lightbulb className="inline w-4 h-4 text-purple-600 mr-1" />
+              <strong>工程取捨:</strong>輪軸尺寸要兼顧「省力」「操作空間」「人手大小」三方,不是越大越好。
+            </p>
+          </div>
+        </Card>
+      </section>
+
       <WordwallGameGate partId="2-3"
         src="https://wordwall.net/tc/embed/07810805580f4421bbbddacb14fbc6b4?themeId=1&templateId=5&fontStackId=0"
         sectionLabel="輪軸" />
+    </div>
+  );
+}
+
+/* 輪軸應用小卡 */
+function WheelExampleCard({ emoji, name, force, effect }) {
+  const isWheel = force === '輪';
+  return (
+    <div className={`rounded-lg border-2 p-3 ${isWheel ? 'border-green-300 bg-green-50/50' : 'border-orange-300 bg-orange-50/50'}`}>
+      <div className="text-3xl text-center mb-1">{emoji}</div>
+      <div className="font-bold text-slate-800 text-sm text-center">{name}</div>
+      <div className={`text-xs text-center mt-1 ${isWheel ? 'text-green-700' : 'text-orange-700'}`}>施力在{force}</div>
+      <div className="text-xs text-slate-600 mt-1 text-center">{effect}</div>
     </div>
   );
 }
@@ -1157,9 +1338,201 @@ function PulleySection1() {
       </div>
       <MiniQuiz partId="3-1" nextPartId="3-2" />
       </section>
+
+      {/* 補充 1：為什麼往下拉繩物體會往上升 */}
+      <section className="mb-10">
+        <Card title="為什麼往下拉繩,國旗會往上升?" icon={<Lightbulb className="text-amber-500" />}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+            <div className="md:col-span-1 aspect-square bg-amber-50 rounded-lg overflow-hidden border border-slate-200 flex items-center justify-center">
+              <SvgFlagPole />
+            </div>
+            <div className="md:col-span-2 space-y-3 text-slate-700">
+              <p>定滑輪固定在<strong className="text-blue-700">高處</strong>,繩子一邊掛物體(國旗)、另一邊讓人拉動。</p>
+              <p>因為繩子<strong className="bg-blue-100 px-1 rounded">沒有彈性、總長不變</strong>,所以當我們把一邊往下拉一段距離,另一邊也只能往上升<strong className="bg-blue-100 px-1 rounded">同樣的距離</strong>——這就是「改變方向」的祕密!</p>
+              <p className="text-sm bg-blue-50 p-3 rounded-lg border border-blue-100">
+                <Lightbulb className="inline w-4 h-4 text-amber-500 mr-1" />
+                <strong>關鍵字:</strong>繩長固定 → 一端下降 N 公分,另一端上升 N 公分。施力大小也<strong>沒有減半</strong>(因為支點在中間,左右力臂相等)。
+              </p>
+            </div>
+          </div>
+        </Card>
+      </section>
+
+      {/* 補充 2：定/動滑輪剖面對照表 */}
+      <section className="mb-10">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="bg-blue-100 p-4 border-b border-blue-200">
+            <h4 className="text-lg font-bold text-blue-900 flex items-center gap-2">
+              <BookOpen className="w-5 h-5" /> 定滑輪 vs 動滑輪 五面向對照表
+            </h4>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[640px]">
+              <thead>
+                <tr className="bg-slate-50 text-slate-700">
+                  <th className="p-4 border-b border-slate-200 font-bold w-1/5">比較項目</th>
+                  <th className="p-4 border-b border-slate-200 font-bold w-2/5 bg-blue-50/60">🔒 定滑輪</th>
+                  <th className="p-4 border-b border-slate-200 font-bold w-2/5 bg-green-50/60">⚙️ 動滑輪</th>
+                </tr>
+              </thead>
+              <tbody className="text-slate-700">
+                <tr><td className="p-4 border-b border-slate-100 font-bold">支點位置</td>
+                  <td className="p-4 border-b border-slate-100 bg-blue-50/30">滑輪<strong>中心</strong>(固定不動)</td>
+                  <td className="p-4 border-b border-slate-100 bg-green-50/30">滑輪<strong>邊緣繩子的接點</strong>(隨重物上下)</td></tr>
+                <tr><td className="p-4 border-b border-slate-100 font-bold">省力倍數</td>
+                  <td className="p-4 border-b border-slate-100 bg-blue-50/30"><span className="text-red-600 font-bold">不省力</span>(1 倍)</td>
+                  <td className="p-4 border-b border-slate-100 bg-green-50/30"><span className="text-green-600 font-bold">省一半的力</span>(1/2 倍)</td></tr>
+                <tr><td className="p-4 border-b border-slate-100 font-bold">拉繩距離</td>
+                  <td className="p-4 border-b border-slate-100 bg-blue-50/30">與重物上升<strong>同距離</strong></td>
+                  <td className="p-4 border-b border-slate-100 bg-green-50/30">重物上升的<strong>兩倍</strong></td></tr>
+                <tr><td className="p-4 border-b border-slate-100 font-bold">改變方向</td>
+                  <td className="p-4 border-b border-slate-100 bg-blue-50/30"><span className="text-green-600 font-bold">✓ 可以</span>(下拉 → 上升)</td>
+                  <td className="p-4 border-b border-slate-100 bg-green-50/30"><span className="text-red-600 font-bold">✗ 不行</span>(上拉 → 上升)</td></tr>
+                <tr><td className="p-4 font-bold">代表用途</td>
+                  <td className="p-4 bg-blue-50/30">升旗桿、窗簾、晾衣繩</td>
+                  <td className="p-4 bg-green-50/30">起重機吊鉤、吊掛系統</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      {/* 補充 3：生活情境配對 */}
+      <section className="mb-10">
+        <Card title="生活情境配對:哪一種滑輪?" icon={<Gamepad2 className="text-purple-500" />}>
+          <p className="text-slate-600 text-sm mb-4">看看下面 6 個情境,試著分辨它們用的是「定滑輪」還是「動滑輪」吧!(滑鼠移上去看答案)</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <ScenarioMatchCard emoji="🇹🇼" label="升旗" answer="定" hint="旗子上升,人在地面下拉" />
+            <ScenarioMatchCard emoji="🏗️" label="工地起重機" answer="動" hint="鉤子跟著鋼樑一起被吊起" />
+            <ScenarioMatchCard emoji="👕" label="晾衣繩" answer="定" hint="繩子兩端固定,只是換個方向晾" />
+            <ScenarioMatchCard emoji="🎣" label="釣魚捲線器" answer="—" hint="這是輪軸不是滑輪!輪軸:把手是輪、軸帶動線" />
+            <ScenarioMatchCard emoji="🎭" label="舞台布幕" answer="定" hint="拉一邊,另一邊往上,改變方向" />
+            <ScenarioMatchCard emoji="🛠️" label="窗框平衡錘" answer="動" hint="平衡錘跟窗一起上下,共用一條繩" />
+          </div>
+        </Card>
+      </section>
+
+      {/* 補充 4：複滑輪延伸 */}
+      <section className="mb-10">
+        <Card title="進階觀念:把它們組起來——複滑輪" icon={<Sparkles className="text-purple-600" />}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+            <div className="md:col-span-1 aspect-square bg-purple-50 rounded-lg overflow-hidden border border-slate-200 flex items-center justify-center">
+              <SvgCompoundPulley />
+            </div>
+            <div className="md:col-span-2 space-y-3 text-slate-700">
+              <p>把「定滑輪」和「動滑輪」串在一起就成為<strong className="text-purple-700">複滑輪(滑輪組)</strong>。</p>
+              <ul className="space-y-1 list-disc ml-5 text-sm">
+                <li>1 個動滑輪 + 1 個定滑輪 → 省 1/2 的力 + 改變方向</li>
+                <li>2 個動滑輪 + 2 個定滑輪 → 省 1/4 的力 + 改變方向</li>
+                <li>承載繩數越多 → 越省力,但拉繩距離也越長</li>
+              </ul>
+              <p className="text-sm bg-amber-50 p-3 rounded-lg border border-amber-200">
+                <Lightbulb className="inline w-4 h-4 text-amber-600 mr-1" />
+                <strong>大型起重機</strong>能吊起好幾噸的鋼樑,就是用大量複滑輪減少所需馬達力氣;代價是<strong>鋼索要拉很長距離</strong>(吊鉤上升一公尺,鋼索要拉好幾公尺)。
+              </p>
+            </div>
+          </div>
+        </Card>
+      </section>
     </div>
   );
 }
+
+/* 滑輪情境配對卡片 */
+function ScenarioMatchCard({ emoji, label, answer, hint }) {
+  const [revealed, setRevealed] = useState(false);
+  const colorMap = { '定': 'border-blue-300 bg-blue-50', '動': 'border-green-300 bg-green-50', '—': 'border-amber-300 bg-amber-50' };
+  const labelMap = { '定': '定滑輪', '動': '動滑輪', '—': '不是滑輪!' };
+  return (
+    <button
+      onClick={() => setRevealed(r => !r)}
+      onMouseEnter={() => setRevealed(true)}
+      onMouseLeave={() => setRevealed(false)}
+      className={`p-4 rounded-lg border-2 text-left transition-all ${revealed ? colorMap[answer] : 'border-slate-200 bg-white hover:border-slate-300'}`}
+    >
+      <div className="flex items-center gap-2 mb-1">
+        <span className="text-2xl">{emoji}</span>
+        <span className="font-bold text-slate-800">{label}</span>
+      </div>
+      {revealed ? (
+        <div className="text-sm">
+          <div className="font-bold text-slate-900 mb-1">答案:{labelMap[answer]}</div>
+          <div className="text-slate-600 text-xs">{hint}</div>
+        </div>
+      ) : (
+        <div className="text-xs text-slate-400">點一下看答案</div>
+      )}
+    </button>
+  );
+}
+
+/* SVG: 升旗桿（定滑輪示意） */
+const SvgFlagPole = () => (
+  <svg viewBox="0 0 200 200" className="w-full h-full">
+    <style>{`
+      @keyframes flag-up { 0% { transform: translateY(50px); } 100% { transform: translateY(0); } }
+      @keyframes rope-down { 0% { transform: translateY(0); } 100% { transform: translateY(50px); } }
+    `}</style>
+    {/* 桿 */}
+    <rect x="95" y="30" width="6" height="150" fill="#64748b" />
+    {/* 滑輪 */}
+    <circle cx="98" cy="42" r="12" fill="none" stroke="#3b82f6" strokeWidth="3" />
+    <circle cx="98" cy="42" r="2" fill="#1e3a8a" />
+    {/* 繩子左（國旗） */}
+    <line x1="86" y1="42" x2="86" y2="180" stroke="#475569" strokeWidth="1.5" />
+    {/* 繩子右（拉手） */}
+    <line x1="110" y1="42" x2="110" y2="180" stroke="#475569" strokeWidth="1.5" />
+    {/* 國旗（上升） */}
+    <g style={{ animation: 'flag-up 3s infinite alternate ease-in-out' }}>
+      <rect x="60" y="60" width="26" height="18" fill="#ef4444" />
+      <text x="73" y="72" fontSize="9" fill="white" textAnchor="middle" fontWeight="bold">旗</text>
+    </g>
+    {/* 拉手（下降，反向動畫） */}
+    <g style={{ animation: 'rope-down 3s infinite alternate ease-in-out' }}>
+      <path d="M 105 110 L 115 110 L 115 130 L 105 130 Z" fill="#f59e0b" />
+      <text x="110" y="124" fontSize="9" fill="white" textAnchor="middle" fontWeight="bold">拉</text>
+    </g>
+    {/* 箭頭：國旗上 */}
+    <path d="M 50 90 L 50 70" stroke="#10b981" strokeWidth="3" markerEnd="url(#arr-up-flag)" />
+    {/* 箭頭：拉手下 */}
+    <path d="M 130 130 L 130 150" stroke="#ef4444" strokeWidth="3" markerEnd="url(#arr-down-flag)" />
+    <defs>
+      <marker id="arr-up-flag" markerWidth="10" markerHeight="10" refX="3" refY="5" orient="auto">
+        <polygon points="0,8 6,5 0,2" fill="#10b981" />
+      </marker>
+      <marker id="arr-down-flag" markerWidth="10" markerHeight="10" refX="3" refY="5" orient="auto">
+        <polygon points="0,2 6,5 0,8" fill="#ef4444" />
+      </marker>
+    </defs>
+  </svg>
+);
+
+/* SVG: 複滑輪示意 */
+const SvgCompoundPulley = () => (
+  <svg viewBox="0 0 200 200" className="w-full h-full">
+    {/* 上方支架 */}
+    <rect x="40" y="20" width="120" height="6" fill="#475569" />
+    {/* 上方定滑輪 */}
+    <circle cx="70" cy="40" r="12" fill="none" stroke="#3b82f6" strokeWidth="3" />
+    <circle cx="70" cy="40" r="2" fill="#1e3a8a" />
+    <circle cx="130" cy="40" r="12" fill="none" stroke="#3b82f6" strokeWidth="3" />
+    <circle cx="130" cy="40" r="2" fill="#1e3a8a" />
+    {/* 下方動滑輪 */}
+    <circle cx="100" cy="120" r="14" fill="none" stroke="#10b981" strokeWidth="3" />
+    <circle cx="100" cy="120" r="2" fill="#064e3b" />
+    {/* 繩子 */}
+    <path d="M 58 40 L 58 180" stroke="#475569" strokeWidth="1.5" fill="none" />
+    <path d="M 82 40 Q 86 80 86 120 Q 86 134 100 134" stroke="#475569" strokeWidth="1.5" fill="none" />
+    <path d="M 100 134 Q 114 134 114 120 Q 114 80 118 40" stroke="#475569" strokeWidth="1.5" fill="none" />
+    <path d="M 142 40 L 142 180" stroke="#475569" strokeWidth="1.5" fill="none" />
+    {/* 重物 */}
+    <rect x="85" y="135" width="30" height="30" rx="3" fill="#334155" />
+    <text x="100" y="155" fontSize="11" fill="white" textAnchor="middle" fontWeight="bold">物</text>
+    {/* 標籤 */}
+    <text x="58" y="195" fontSize="9" fill="#475569" textAnchor="middle">拉</text>
+    <text x="142" y="195" fontSize="9" fill="#475569" textAnchor="middle">固定</text>
+  </svg>
+);
 
 /* =========================================
    Section s6: 第 6 節 滑輪(二)：實體實驗與應用
@@ -1176,6 +1549,75 @@ function PulleySection2() {
         <PartHeader number="3-2" title="滑輪實驗室" />
         <PulleyLab />
         <MiniQuiz partId="3-2" />
+      </section>
+
+      {/* 補充 1：實驗數據對照表（教師可印給學生填） */}
+      <section className="mb-10">
+        <Card title="實驗記錄表:定/動滑輪數據對照" icon={<FileText className="text-blue-500" />}>
+          <p className="text-slate-600 text-sm mb-4">用 100g 砝碼、彈簧秤,讓砝碼上升 10 公分。每組做 3 次取平均,填入下表並計算「力 × 距離」。</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border-collapse min-w-[640px]">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700">
+                  <th className="p-2 border border-slate-300 font-bold">滑輪類型</th>
+                  <th className="p-2 border border-slate-300 font-bold">砝碼重(g)</th>
+                  <th className="p-2 border border-slate-300 font-bold">彈簧秤示數(g)</th>
+                  <th className="p-2 border border-slate-300 font-bold">砝碼上升(cm)</th>
+                  <th className="p-2 border border-slate-300 font-bold">拉繩距離(cm)</th>
+                  <th className="p-2 border border-slate-300 font-bold">力 × 距離 (g·cm)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="bg-blue-50/40">
+                  <td className="p-2 border border-slate-300 font-bold text-blue-700">定滑輪</td>
+                  <td className="p-2 border border-slate-300 text-center">100</td>
+                  <td className="p-2 border border-slate-300 text-center text-slate-400">≈ 100</td>
+                  <td className="p-2 border border-slate-300 text-center">10</td>
+                  <td className="p-2 border border-slate-300 text-center text-slate-400">≈ 10</td>
+                  <td className="p-2 border border-slate-300 text-center text-slate-400">≈ 1000</td>
+                </tr>
+                <tr className="bg-green-50/40">
+                  <td className="p-2 border border-slate-300 font-bold text-green-700">動滑輪</td>
+                  <td className="p-2 border border-slate-300 text-center">100</td>
+                  <td className="p-2 border border-slate-300 text-center text-slate-400">≈ 50</td>
+                  <td className="p-2 border border-slate-300 text-center">10</td>
+                  <td className="p-2 border border-slate-300 text-center text-slate-400">≈ 20</td>
+                  <td className="p-2 border border-slate-300 text-center text-slate-400">≈ 1000</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900">
+            <Lightbulb className="inline w-4 h-4 text-amber-600 mr-1" />
+            <strong>關鍵發現:</strong>兩種滑輪的「力 × 距離」幾乎相等 → 機械可以省力,但要拉得更遠,<strong>總功不變</strong>!
+          </div>
+        </Card>
+      </section>
+
+      {/* 補充 2：工程考量卡 — 為什麼升旗用定、起重機用動 */}
+      <section className="mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card title="為什麼「升旗」要用定滑輪?" icon={<Lightbulb className="text-amber-500" />}>
+            <ul className="space-y-2 list-disc ml-5 text-slate-700">
+              <li>國旗本身很輕,<strong>不需要省力</strong>。</li>
+              <li>但旗手站在<strong className="bg-blue-100 px-1 rounded">地面</strong>,必須<strong>讓上升動作從下拉開始</strong> → 需要<strong>改變方向</strong>。</li>
+              <li>定滑輪剛好滿足:不省力但改變方向 ✓</li>
+            </ul>
+            <p className="mt-3 text-sm bg-blue-50 p-2 rounded border border-blue-100">
+              <strong>結論:</strong>當任務「不重」但「角度方便」最重要時 → 選定滑輪。
+            </p>
+          </Card>
+          <Card title="為什麼「工地起重機」要用動滑輪?" icon={<Lightbulb className="text-amber-500" />}>
+            <ul className="space-y-2 list-disc ml-5 text-slate-700">
+              <li>鋼樑/水泥塊<strong>非常重</strong> → 馬達單獨拉會燒掉。</li>
+              <li>用動滑輪 → <strong className="text-green-700">省一半的力</strong>,讓馬達吃得消。</li>
+              <li>方向問題可以靠機械手臂調整,不必靠滑輪改變方向。</li>
+            </ul>
+            <p className="mt-3 text-sm bg-green-50 p-2 rounded border border-green-100">
+              <strong>結論:</strong>當任務「很重」但「方向可調」時 → 選動滑輪(或複滑輪疊上去)。
+            </p>
+          </Card>
+        </div>
       </section>
 
       <WordwallGameGate partId="3-2"
@@ -1515,6 +1957,90 @@ function GearSection() {
           src="https://wordwall.net/tc/embed/0408bd59dd164f219d674eedd27414b1?themeId=43&templateId=5&fontStackId=0"
           sectionLabel="齒輪+綜合"
         />
+      )}
+
+      {/* 補充：6 張情境簡報卡（給課堂分組抽卡用） */}
+      <section className="mt-10">
+        <Card title="情境簡報卡:六大生活任務,你會怎麼用簡單機械?" icon={<Gamepad2 className="text-purple-500" />}>
+          <p className="text-slate-600 text-sm mb-4">每張卡片是一個生活情境。點一下展開,看「用了哪些簡單機械、省什麼、不用會怎樣」。課堂上可分組抽卡上台簡報 1.5 分鐘。</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <ScenarioBriefingCard
+              emoji="🎹" title="搬鋼琴上 3 樓"
+              machines={['動滑輪 / 複滑輪', '斜面(若有樓梯車)']}
+              save="省力(分擔重量)"
+              without="兩個人扛不動,需 4-6 人;手會發抖、容易閃腰"
+              color="purple"
+            />
+            <ScenarioBriefingCard
+              emoji="🛗" title="搭電梯上樓"
+              machines={['動滑輪 + 配重(平衡錘)', '輪軸(馬達)']}
+              save="省力(配重抵消車廂重)"
+              without="爬樓梯非常累,長者/輪椅族無法上下樓"
+              color="blue"
+            />
+            <ScenarioBriefingCard
+              emoji="🥤" title="開汽水瓶蓋"
+              machines={['槓桿(第一類:支點在中)']}
+              save="省力(施力臂 > 抗力臂)"
+              without="直接用手很難扳開,可能刮傷手"
+              color="green"
+            />
+            <ScenarioBriefingCard
+              emoji="🔧" title="組裝書架"
+              machines={['輪軸(螺絲起子把手)', '槓桿(扳手)']}
+              save="省力(把手粗 → 輕鬆轉緊螺絲)"
+              without="徒手鎖螺絲根本鎖不緊,書架會搖晃"
+              color="orange"
+            />
+            <ScenarioBriefingCard
+              emoji="🎣" title="釣魚收線"
+              machines={['輪軸(捲線器)', '槓桿(釣竿本身)']}
+              save="省距離(轉一圈 → 收進好幾公分線)"
+              without="徒手拉線又慢又費力,魚會掙脫"
+              color="blue"
+            />
+            <ScenarioBriefingCard
+              emoji="🚲" title="騎腳踏車上坡"
+              machines={['齒輪/鏈條(變速箱)', '輪軸(踏板曲柄)']}
+              save="變速(換低速齒比省力,代價是踩快但車慢)"
+              without="爬坡踩不動,只能下車推"
+              color="red"
+            />
+          </div>
+        </Card>
+      </section>
+    </div>
+  );
+}
+
+/* 情境簡報卡 — 可點擊展開 */
+function ScenarioBriefingCard({ emoji, title, machines, save, without, color }) {
+  const [open, setOpen] = useState(false);
+  const colorMap = {
+    blue:   'border-blue-300 bg-blue-50/60 hover:bg-blue-50',
+    green:  'border-green-300 bg-green-50/60 hover:bg-green-50',
+    orange: 'border-orange-300 bg-orange-50/60 hover:bg-orange-50',
+    red:    'border-red-300 bg-red-50/60 hover:bg-red-50',
+    purple: 'border-purple-300 bg-purple-50/60 hover:bg-purple-50',
+  };
+  return (
+    <div className={`rounded-lg border-2 p-4 transition-all ${colorMap[color]}`}>
+      <button onClick={() => setOpen(o => !o)} className="w-full flex items-center justify-between text-left">
+        <span className="font-bold text-slate-800 flex items-center gap-2">
+          <span className="text-2xl">{emoji}</span> {title}
+        </span>
+        <span className="text-slate-500 text-xs">{open ? '收起 ▲' : '展開 ▼'}</span>
+      </button>
+      {open && (
+        <div className="mt-3 space-y-2 text-sm border-t border-slate-300/50 pt-3">
+          <div><strong className="text-blue-700">🔧 用了哪些機械:</strong>
+            <ul className="ml-5 list-disc text-slate-700 mt-1">
+              {machines.map((m, i) => <li key={i}>{m}</li>)}
+            </ul>
+          </div>
+          <div><strong className="text-green-700">✨ 省什麼:</strong> <span className="text-slate-700">{save}</span></div>
+          <div><strong className="text-red-700">⚠️ 不用機械會怎樣:</strong> <span className="text-slate-700">{without}</span></div>
+        </div>
       )}
     </div>
   );
