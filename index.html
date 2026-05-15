@@ -858,15 +858,16 @@ function LeverSection1() {
       {unlocked['1-2'] && (
         <section className="mb-10">
           <Card title="我家槓桿大搜尋:你能分辨類型嗎?" icon={<Gamepad2 className="text-purple-500" />}>
-            <p className="text-slate-600 text-sm mb-4">看看 6 個生活中的工具,你能正確判斷它們是「第幾類槓桿」嗎?</p>
+            <p className="text-slate-600 text-sm mb-4">看看 6 個生活中的工具,試試看用「省力 / 費力 / 等臂」三類來分辨它們吧!</p>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              <LeverQuizCard emoji="✂️" name="剪刀" answer="一" hint="支點在中間(轉軸),施力與抗力在兩側" />
-              <LeverQuizCard emoji="🧃" name="開瓶器" answer="二" hint="支點(瓶蓋邊)→ 抗力(瓶蓋)→ 施力(手),抗力在中" />
-              <LeverQuizCard emoji="🥢" name="筷子" answer="三" hint="支點(手腕端)→ 施力(手指)→ 抗力(夾頭),施力在中" />
-              <LeverQuizCard emoji="🎣" name="釣魚竿" answer="三" hint="支點(手後端)→ 施力(手前端)→ 抗力(魚),施力在中" />
-              <LeverQuizCard emoji="🔨" name="拔釘鎚" answer="一" hint="支點(鎚頭觸地點)→ 抗力(釘子)→ 施力(握柄),支點在中" />
-              <LeverQuizCard emoji="🥄" name="獨輪車" answer="二" hint="支點(輪)→ 抗力(載物)→ 施力(扶把),抗力在中" />
+              <LeverQuizCard emoji="✂️" name="剪刀" answer="省力" hint="手抓的握柄長(施力臂大)、刀刃短(抗力臂小) → 省力剪紙" />
+              <LeverQuizCard emoji="🧃" name="開瓶器" answer="省力" hint="長長的握柄是施力臂、瓶蓋邊是抗力臂 → 施力臂 > 抗力臂,省力" />
+              <LeverQuizCard emoji="⚖️" name="翹翹板" answer="等臂" hint="支點在中間,兩邊距離一樣 → 施力臂 = 抗力臂,不省力也不費力" />
+              <LeverQuizCard emoji="🪶" name="天平" answer="等臂" hint="兩端到中央軸距離相等,用來量重量,所以一定是等臂" />
+              <LeverQuizCard emoji="🥢" name="筷子" answer="費力" hint="手指出力地方靠近支點(施力臂小)、夾食物的尖端遠(抗力臂大) → 費力,但能精準" />
+              <LeverQuizCard emoji="🤏" name="鑷子" answer="費力" hint="手捏的地方就是支點,施力臂幾乎等於 0 → 費力,但能夾很小的東西" />
             </div>
+            <p className="mt-4 text-xs text-slate-500">💡 答對率 5/6 以上代表你掌握重點囉!</p>
           </Card>
         </section>
       )}
@@ -878,25 +879,32 @@ function LeverSection1() {
 function LeverQuizCard({ emoji, name, answer, hint }) {
   const [picked, setPicked] = useState(null);
   const correct = picked === answer;
+  const opts = [
+    { key: '省力', label: '省力槓桿', color: 'green' },
+    { key: '等臂', label: '等臂槓桿', color: 'blue' },
+    { key: '費力', label: '費力槓桿', color: 'red' },
+  ];
   return (
     <div className="rounded-lg border-2 border-slate-200 bg-white p-4">
       <div className="text-center mb-2">
         <div className="text-4xl">{emoji}</div>
         <div className="font-bold text-slate-800 mt-1">{name}</div>
       </div>
-      <div className="grid grid-cols-3 gap-1 mb-2">
-        {['一', '二', '三'].map(opt => {
-          const isPicked = picked === opt;
+      <div className="grid grid-cols-1 gap-1 mb-2">
+        {opts.map(({ key, label, color }) => {
+          const isPicked = picked === key;
           const isCorrect = isPicked && correct;
           const isWrong = isPicked && !correct;
+          const idle = !isPicked && (!picked || !correct);
           return (
-            <button key={opt} onClick={() => setPicked(opt)} disabled={correct}
+            <button key={key} onClick={() => setPicked(key)} disabled={correct}
               className={`py-1.5 rounded text-sm font-bold border-2 transition-colors ${
                 isCorrect ? 'border-green-500 bg-green-100 text-green-800' :
                 isWrong ? 'border-red-500 bg-red-100 text-red-800' :
-                'border-slate-200 hover:border-blue-400 hover:bg-blue-50 text-slate-700'
+                idle ? `border-slate-200 hover:border-${color}-400 hover:bg-${color}-50 text-slate-700` :
+                'border-slate-200 bg-slate-50 text-slate-400'
               }`}>
-              第{opt}類
+              {label}
             </button>
           );
         })}
