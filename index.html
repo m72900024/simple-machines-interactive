@@ -50,7 +50,7 @@ const SECTION_PARTS = {
   pulley: ['3-1','3-2'],
   gear:   ['4-1','4-2','4-3'],
 };
-const SECTION_LABEL = { lever: '第 1 節 槓桿', wheel: '第 2 節 輪軸', pulley: '第 3 節 滑輪', gear: '第 4 節 齒輪+綜合' };
+const SECTION_LABEL = { lever: '槓桿', wheel: '輪軸', pulley: '滑輪', gear: '齒輪+綜合' };
 const NEXT_SECTION = { '1-3': 'wheel', '2-3': 'pulley', '3-2': 'gear', '4-3': 'quiz' };
 const STORAGE_KEY = 'sm_interactive_progress_v1';
 
@@ -323,10 +323,10 @@ function AppInner() {
             </div>
             <nav className="flex flex-wrap gap-2 justify-center">
               <TabButton active={activeTab === 'textbook'} onClick={() => tryTab('textbook')} label="📚 電子課本" />
-              <TabButton active={activeTab === 'lever'} onClick={() => tryTab('lever')} label="第1節 槓桿" />
-              <TabButton active={activeTab === 'wheel'} onClick={() => tryTab('wheel')} label="第2節 輪軸" locked={!isSectionAccessible('wheel')} />
-              <TabButton active={activeTab === 'pulley'} onClick={() => tryTab('pulley')} label="第3節 滑輪" locked={!isSectionAccessible('pulley')} />
-              <TabButton active={activeTab === 'gear'} onClick={() => tryTab('gear')} label="第4節 齒輪+綜合" locked={!isSectionAccessible('gear')} />
+              <TabButton active={activeTab === 'lever'} onClick={() => tryTab('lever')} label="槓桿" />
+              <TabButton active={activeTab === 'wheel'} onClick={() => tryTab('wheel')} label="輪軸" locked={!isSectionAccessible('wheel')} />
+              <TabButton active={activeTab === 'pulley'} onClick={() => tryTab('pulley')} label="滑輪" locked={!isSectionAccessible('pulley')} />
+              <TabButton active={activeTab === 'gear'} onClick={() => tryTab('gear')} label="齒輪+綜合" locked={!isSectionAccessible('gear')} />
               <TabButton active={activeTab === 'quiz'} onClick={() => tryTab('quiz')} label="單元總測驗" isQuiz locked={!isSectionAccessible('quiz')} />
             </nav>
           </div>
@@ -764,7 +764,7 @@ function LeverSection() {
   return (
     <div className="animate-fade-in">
       <h2 className="text-2xl font-bold text-blue-800 mb-6 flex items-center gap-2 border-b pb-2">
-        <Scale className="text-blue-500" /> 第 1 節:認識槓桿原理
+        <Scale className="text-blue-500" /> 認識槓桿原理
       </h2>
 
       {/* Part 1-1 */}
@@ -889,7 +889,7 @@ function LeverSection() {
       {unlocked['1-3'] && (
         <WordwallGame
           src="https://wordwall.net/tc/embed/c03fb77019e24157ac9164cf8d9f6385?themeId=23&templateId=49&fontStackId=0"
-          sectionLabel="第 1 節 槓桿"
+          sectionLabel="槓桿"
         />
       )}
     </div>
@@ -1019,7 +1019,7 @@ function WheelAxleSection() {
   return (
     <div className="animate-fade-in">
       <h2 className="text-2xl font-bold text-blue-800 mb-6 flex items-center gap-2 border-b pb-2">
-        <RotateCw className="text-blue-500" /> 第 2 節:認識輪軸
+        <RotateCw className="text-blue-500" /> 認識輪軸
       </h2>
 
       {/* Part 2-1 */}
@@ -1098,7 +1098,7 @@ function WheelAxleSection() {
       {unlocked['2-3'] && (
         <WordwallGame
           src="https://wordwall.net/tc/embed/07810805580f4421bbbddacb14fbc6b4?themeId=1&templateId=5&fontStackId=0"
-          sectionLabel="第 2 節 輪軸"
+          sectionLabel="輪軸"
         />
       )}
     </div>
@@ -1110,7 +1110,7 @@ function PulleySection() {
   return (
     <div className="animate-fade-in">
       <h2 className="text-2xl font-bold text-blue-800 mb-6 flex items-center gap-2 border-b pb-2">
-        <RotateCw className="text-blue-500" /> 第 3 節:認識滑輪
+        <RotateCw className="text-blue-500" /> 認識滑輪
       </h2>
 
       {/* Part 3-1 */}
@@ -1152,7 +1152,7 @@ function PulleySection() {
       {unlocked['3-2'] && (
         <WordwallGame
           src="https://wordwall.net/tc/embed/34a2928692324200becafd3a500078a6?themeId=23&templateId=49&fontStackId=0"
-          sectionLabel="第 3 節 滑輪"
+          sectionLabel="滑輪"
         />
       )}
     </div>
@@ -1408,7 +1408,7 @@ function GearSection() {
   return (
     <div className="animate-fade-in">
       <h2 className="text-2xl font-bold text-blue-800 mb-6 flex items-center gap-2 border-b pb-2">
-        <Settings className="text-blue-500" /> 第 4 節:齒輪與鏈條 + 綜合應用
+        <Settings className="text-blue-500" /> 齒輪與鏈條 + 綜合應用
       </h2>
 
       {/* Part 4-1 */}
@@ -1487,7 +1487,7 @@ function GearSection() {
       {unlocked['4-3'] && (
         <WordwallGame
           src="https://wordwall.net/tc/embed/0408bd59dd164f219d674eedd27414b1?themeId=43&templateId=5&fontStackId=0"
-          sectionLabel="第 4 節 齒輪+綜合"
+          sectionLabel="齒輪+綜合"
         />
       )}
     </div>
@@ -1504,7 +1504,7 @@ function SynthesisBlock() {
       </div>
       <div className="p-6">
         <p className="mb-6 text-slate-700 text-base leading-relaxed">
-          四節課我們認識了 <strong>槓桿、輪軸、滑輪、齒輪與鏈條</strong> 四大簡單機械。把它們放在一起比較,就能看出每一種機械的特長與限制!
+          七節課我們認識了 <strong>槓桿、輪軸、滑輪、齒輪與鏈條</strong> 四大簡單機械。把它們放在一起比較,就能看出每一種機械的特長與限制!
         </p>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[700px]">
