@@ -45,13 +45,32 @@ import {
    ========================================= */
 const PARTS = ['1-1','1-2','1-3','2-1','2-2','2-3','3-1','3-2','4-1','4-2','4-3'];
 const SECTION_PARTS = {
-  lever:  ['1-1','1-2','1-3'],
-  wheel:  ['2-1','2-2','2-3'],
-  pulley: ['3-1','3-2'],
-  gear:   ['4-1','4-2','4-3'],
+  s1: ['1-1','1-2'],          // 第 1 節 槓桿(一)：三要素 + 三類型
+  s2: ['1-3'],                // 第 2 節 槓桿(二)：實驗 + 功不變
+  s3: ['2-1','2-2'],          // 第 3 節 輪軸(一)：剖面圖 + 原理
+  s4: ['2-3'],                // 第 4 節 輪軸(二)：實驗 + 應用
+  s5: ['3-1'],                // 第 5 節 滑輪(一)：定/動原理
+  s6: ['3-2'],                // 第 6 節 滑輪(二)：實體實驗
+  s7: ['4-1','4-2','4-3'],    // 第 7 節 齒輪+綜合：傳動 + 功不變總結
 };
-const SECTION_LABEL = { lever: '槓桿', wheel: '輪軸', pulley: '滑輪', gear: '齒輪+綜合' };
-const NEXT_SECTION = { '1-3': 'wheel', '2-3': 'pulley', '3-2': 'gear', '4-3': 'quiz' };
+const SECTION_LABEL = {
+  s1: '第 1 節 槓桿(一)',
+  s2: '第 2 節 槓桿(二)',
+  s3: '第 3 節 輪軸(一)',
+  s4: '第 4 節 輪軸(二)',
+  s5: '第 5 節 滑輪(一)',
+  s6: '第 6 節 滑輪(二)',
+  s7: '第 7 節 齒輪+綜合',
+};
+const NEXT_SECTION = {
+  '1-2': 's2',
+  '1-3': 's3',
+  '2-2': 's4',
+  '2-3': 's5',
+  '3-1': 's6',
+  '3-2': 's7',
+  '4-3': 'quiz',
+};
 const STORAGE_KEY = 'sm_interactive_progress_v1';
 
 const QUIZ = {
@@ -87,11 +106,14 @@ function ProgressProvider({ children }) {
   const percent = Math.round((totalDone / PARTS.length) * 100);
 
   const isSectionAccessible = (section) => {
-    if (section === 'textbook' || section === 'lever') return true;
+    if (section === 'textbook' || section === 's1') return true;
     const need = {
-      wheel: SECTION_PARTS.lever,
-      pulley: [...SECTION_PARTS.lever, ...SECTION_PARTS.wheel],
-      gear: [...SECTION_PARTS.lever, ...SECTION_PARTS.wheel, ...SECTION_PARTS.pulley],
+      s2: SECTION_PARTS.s1,
+      s3: [...SECTION_PARTS.s1, ...SECTION_PARTS.s2],
+      s4: [...SECTION_PARTS.s1, ...SECTION_PARTS.s2, ...SECTION_PARTS.s3],
+      s5: [...SECTION_PARTS.s1, ...SECTION_PARTS.s2, ...SECTION_PARTS.s3, ...SECTION_PARTS.s4],
+      s6: [...SECTION_PARTS.s1, ...SECTION_PARTS.s2, ...SECTION_PARTS.s3, ...SECTION_PARTS.s4, ...SECTION_PARTS.s5],
+      s7: [...SECTION_PARTS.s1, ...SECTION_PARTS.s2, ...SECTION_PARTS.s3, ...SECTION_PARTS.s4, ...SECTION_PARTS.s5, ...SECTION_PARTS.s6],
       quiz: PARTS,
     }[section] || [];
     return need.every(p => unlocked[p]);
@@ -301,10 +323,16 @@ function AppInner() {
 
   const missingFor = (section) => {
     const labels = { '1-1':'1-1 槓桿三要素','1-2':'1-2 三類型','1-3':'1-3 槓桿實驗','2-1':'2-1 剖面圖','2-2':'2-2 輪軸原理','2-3':'2-3 輪軸實驗','3-1':'3-1 滑輪兄弟','3-2':'3-2 滑輪實驗','4-1':'4-1 齒輪與鏈條','4-2':'4-2 齒輪實驗','4-3':'4-3 綜合總整理' };
-    const need = section === 'wheel' ? SECTION_PARTS.lever
-      : section === 'pulley' ? [...SECTION_PARTS.lever, ...SECTION_PARTS.wheel]
-      : section === 'gear' ? [...SECTION_PARTS.lever, ...SECTION_PARTS.wheel, ...SECTION_PARTS.pulley]
-      : section === 'quiz' ? PARTS : [];
+    const cumulative = {
+      s2: SECTION_PARTS.s1,
+      s3: [...SECTION_PARTS.s1, ...SECTION_PARTS.s2],
+      s4: [...SECTION_PARTS.s1, ...SECTION_PARTS.s2, ...SECTION_PARTS.s3],
+      s5: [...SECTION_PARTS.s1, ...SECTION_PARTS.s2, ...SECTION_PARTS.s3, ...SECTION_PARTS.s4],
+      s6: [...SECTION_PARTS.s1, ...SECTION_PARTS.s2, ...SECTION_PARTS.s3, ...SECTION_PARTS.s4, ...SECTION_PARTS.s5],
+      s7: [...SECTION_PARTS.s1, ...SECTION_PARTS.s2, ...SECTION_PARTS.s3, ...SECTION_PARTS.s4, ...SECTION_PARTS.s5, ...SECTION_PARTS.s6],
+      quiz: PARTS,
+    };
+    const need = cumulative[section] || [];
     return need.filter(p => !unlocked[p]).map(p => labels[p] || p);
   };
 
@@ -323,10 +351,13 @@ function AppInner() {
             </div>
             <nav className="flex flex-wrap gap-2 justify-center">
               <TabButton active={activeTab === 'textbook'} onClick={() => tryTab('textbook')} label="📚 電子課本" />
-              <TabButton active={activeTab === 'lever'} onClick={() => tryTab('lever')} label="槓桿" />
-              <TabButton active={activeTab === 'wheel'} onClick={() => tryTab('wheel')} label="輪軸" locked={!isSectionAccessible('wheel')} />
-              <TabButton active={activeTab === 'pulley'} onClick={() => tryTab('pulley')} label="滑輪" locked={!isSectionAccessible('pulley')} />
-              <TabButton active={activeTab === 'gear'} onClick={() => tryTab('gear')} label="齒輪+綜合" locked={!isSectionAccessible('gear')} />
+              <TabButton active={activeTab === 's1'} onClick={() => tryTab('s1')} label="1 槓桿(一)" />
+              <TabButton active={activeTab === 's2'} onClick={() => tryTab('s2')} label="2 槓桿(二)" locked={!isSectionAccessible('s2')} />
+              <TabButton active={activeTab === 's3'} onClick={() => tryTab('s3')} label="3 輪軸(一)" locked={!isSectionAccessible('s3')} />
+              <TabButton active={activeTab === 's4'} onClick={() => tryTab('s4')} label="4 輪軸(二)" locked={!isSectionAccessible('s4')} />
+              <TabButton active={activeTab === 's5'} onClick={() => tryTab('s5')} label="5 滑輪(一)" locked={!isSectionAccessible('s5')} />
+              <TabButton active={activeTab === 's6'} onClick={() => tryTab('s6')} label="6 滑輪(二)" locked={!isSectionAccessible('s6')} />
+              <TabButton active={activeTab === 's7'} onClick={() => tryTab('s7')} label="7 齒輪+綜合" locked={!isSectionAccessible('s7')} />
               <TabButton active={activeTab === 'quiz'} onClick={() => tryTab('quiz')} label="單元總測驗" isQuiz locked={!isSectionAccessible('quiz')} />
             </nav>
           </div>
@@ -337,10 +368,13 @@ function AppInner() {
       {/* Main Content */}
       <main className="max-w-5xl mx-auto p-4 md:p-6 my-4 bg-white rounded-xl shadow-sm border border-slate-200 min-h-[80vh]">
         {activeTab === 'textbook' && <TextbookSection pdfUrl={pdfUrl} setPdfUrl={setPdfUrl} />}
-        {activeTab === 'lever' && <LeverSection />}
-        {activeTab === 'wheel' && (isSectionAccessible('wheel') ? <WheelAxleSection /> : <SectionLockedNotice section="wheel" missing={missingFor('wheel')} />)}
-        {activeTab === 'pulley' && (isSectionAccessible('pulley') ? <PulleySection /> : <SectionLockedNotice section="pulley" missing={missingFor('pulley')} />)}
-        {activeTab === 'gear' && (isSectionAccessible('gear') ? <GearSection /> : <SectionLockedNotice section="gear" missing={missingFor('gear')} />)}
+        {activeTab === 's1' && <LeverSection1 />}
+        {activeTab === 's2' && (isSectionAccessible('s2') ? <LeverSection2 /> : <SectionLockedNotice section="s2" missing={missingFor('s2')} />)}
+        {activeTab === 's3' && (isSectionAccessible('s3') ? <WheelAxleSection1 /> : <SectionLockedNotice section="s3" missing={missingFor('s3')} />)}
+        {activeTab === 's4' && (isSectionAccessible('s4') ? <WheelAxleSection2 /> : <SectionLockedNotice section="s4" missing={missingFor('s4')} />)}
+        {activeTab === 's5' && (isSectionAccessible('s5') ? <PulleySection1 /> : <SectionLockedNotice section="s5" missing={missingFor('s5')} />)}
+        {activeTab === 's6' && (isSectionAccessible('s6') ? <PulleySection2 /> : <SectionLockedNotice section="s6" missing={missingFor('s6')} />)}
+        {activeTab === 's7' && (isSectionAccessible('s7') ? <GearSection /> : <SectionLockedNotice section="s7" missing={missingFor('s7')} />)}
         {activeTab === 'quiz' && (isSectionAccessible('quiz') ? <QuizSection /> : <SectionLockedNotice section="quiz" missing={missingFor('quiz')} />)}
       </main>
 
@@ -757,14 +791,14 @@ function TextbookSection({ pdfUrl, setPdfUrl }) {
 }
 
 /* =========================================
-   Section 1: Lever (槓桿)
+   Section s1: 第 1 節 槓桿(一)：三要素與三類型
    ========================================= */
-function LeverSection() {
+function LeverSection1() {
   const { unlocked } = useContext(ProgressContext);
   return (
     <div className="animate-fade-in">
       <h2 className="text-2xl font-bold text-blue-800 mb-6 flex items-center gap-2 border-b pb-2">
-        <Scale className="text-blue-500" /> 認識槓桿原理
+        <Scale className="text-blue-500" /> 第 1 節 槓桿(一)：三要素與三類型
       </h2>
 
       {/* Part 1-1 */}
@@ -873,27 +907,40 @@ function LeverSection() {
       ) : (
         <LockedPlaceholder partId="1-2" title="槓桿三種類型" requiresPartId="1-1" />
       )}
-
-      {/* Part 1-3 */}
-      {unlocked['1-2'] ? (
-      <section id="part-1-3" className="scroll-mt-44 mb-10">
-      <PartHeader number="1-3" title="槓桿實驗室" />
-      <LeverLab />
-      <MiniQuiz partId="1-3" />
-      </section>
-      ) : (
-        <LockedPlaceholder partId="1-3" title="槓桿實驗室" requiresPartId="1-2" />
-      )}
-
-      {/* Wordwall Game：1-3 通過後出現 */}
-      {unlocked['1-3'] && (
-        <WordwallGame
-          src="https://wordwall.net/tc/embed/c03fb77019e24157ac9164cf8d9f6385?themeId=23&templateId=49&fontStackId=0"
-          sectionLabel="槓桿"
-        />
-      )}
     </div>
   );
+}
+
+/* =========================================
+   Section s2: 第 2 節 槓桿(二)：實驗與功不變
+   ========================================= */
+function LeverSection2() {
+  return (
+    <div className="animate-fade-in">
+      <h2 className="text-2xl font-bold text-blue-800 mb-6 flex items-center gap-2 border-b pb-2">
+        <Scale className="text-blue-500" /> 第 2 節 槓桿(二)：實驗與功不變
+      </h2>
+
+      {/* Part 1-3 */}
+      <section id="part-1-3" className="scroll-mt-44 mb-10">
+        <PartHeader number="1-3" title="槓桿實驗室" />
+        <LeverLab />
+        <MiniQuiz partId="1-3" />
+      </section>
+
+      {/* Wordwall Game：1-3 通過後出現 */}
+      <WordwallGameGate partId="1-3"
+        src="https://wordwall.net/tc/embed/c03fb77019e24157ac9164cf8d9f6385?themeId=23&templateId=49&fontStackId=0"
+        sectionLabel="槓桿" />
+    </div>
+  );
+}
+
+/* Helper: 只在 partId 通過後顯示 Wordwall */
+function WordwallGameGate({ partId, src, sectionLabel }) {
+  const { unlocked } = useContext(ProgressContext);
+  if (!unlocked[partId]) return null;
+  return <WordwallGame src={src} sectionLabel={sectionLabel} />;
 }
 
 function LeverLab() {
@@ -1012,14 +1059,14 @@ function LeverLab() {
 }
 
 /* =========================================
-   Section 2: Wheel & Axle, Pulleys (輪軸與滑輪)
+   Section s3: 第 3 節 輪軸(一)：剖面圖與原理
    ========================================= */
-function WheelAxleSection() {
+function WheelAxleSection1() {
   const { unlocked } = useContext(ProgressContext);
   return (
     <div className="animate-fade-in">
       <h2 className="text-2xl font-bold text-blue-800 mb-6 flex items-center gap-2 border-b pb-2">
-        <RotateCw className="text-blue-500" /> 認識輪軸
+        <RotateCw className="text-blue-500" /> 第 3 節 輪軸(一)：剖面圖與原理
       </h2>
 
       {/* Part 2-1 */}
@@ -1082,35 +1129,42 @@ function WheelAxleSection() {
       ) : (
         <LockedPlaceholder partId="2-2" title="輪軸原理與應用" requiresPartId="2-1" />
       )}
-
-      {/* Part 2-3 */}
-      {unlocked['2-2'] ? (
-      <section id="part-2-3" className="scroll-mt-44 mb-10">
-      <PartHeader number="2-3" title="輪軸實驗室" />
-      <WheelLab />
-      <MiniQuiz partId="2-3" />
-      </section>
-      ) : (
-        <LockedPlaceholder partId="2-3" title="輪軸實驗室" requiresPartId="2-2" />
-      )}
-
-      {/* Wordwall Game：2-3 通過後出現 */}
-      {unlocked['2-3'] && (
-        <WordwallGame
-          src="https://wordwall.net/tc/embed/07810805580f4421bbbddacb14fbc6b4?themeId=1&templateId=5&fontStackId=0"
-          sectionLabel="輪軸"
-        />
-      )}
     </div>
   );
 }
 
-function PulleySection() {
-  const { unlocked } = useContext(ProgressContext);
+/* =========================================
+   Section s4: 第 4 節 輪軸(二)：實驗與生活應用
+   ========================================= */
+function WheelAxleSection2() {
   return (
     <div className="animate-fade-in">
       <h2 className="text-2xl font-bold text-blue-800 mb-6 flex items-center gap-2 border-b pb-2">
-        <RotateCw className="text-blue-500" /> 認識滑輪
+        <RotateCw className="text-blue-500" /> 第 4 節 輪軸(二)：實驗與生活應用
+      </h2>
+
+      {/* Part 2-3 */}
+      <section id="part-2-3" className="scroll-mt-44 mb-10">
+        <PartHeader number="2-3" title="輪軸實驗室" />
+        <WheelLab />
+        <MiniQuiz partId="2-3" />
+      </section>
+
+      <WordwallGameGate partId="2-3"
+        src="https://wordwall.net/tc/embed/07810805580f4421bbbddacb14fbc6b4?themeId=1&templateId=5&fontStackId=0"
+        sectionLabel="輪軸" />
+    </div>
+  );
+}
+
+/* =========================================
+   Section s5: 第 5 節 滑輪(一)：定/動滑輪原理
+   ========================================= */
+function PulleySection1() {
+  return (
+    <div className="animate-fade-in">
+      <h2 className="text-2xl font-bold text-blue-800 mb-6 flex items-center gap-2 border-b pb-2">
+        <RotateCw className="text-blue-500" /> 第 5 節 滑輪(一)：定/動滑輪原理
       </h2>
 
       {/* Part 3-1 */}
@@ -1136,25 +1190,30 @@ function PulleySection() {
       </div>
       <MiniQuiz partId="3-1" nextPartId="3-2" />
       </section>
+    </div>
+  );
+}
+
+/* =========================================
+   Section s6: 第 6 節 滑輪(二)：實體實驗與應用
+   ========================================= */
+function PulleySection2() {
+  return (
+    <div className="animate-fade-in">
+      <h2 className="text-2xl font-bold text-blue-800 mb-6 flex items-center gap-2 border-b pb-2">
+        <RotateCw className="text-blue-500" /> 第 6 節 滑輪(二)：實體實驗與應用
+      </h2>
 
       {/* Part 3-2 */}
-      {unlocked['3-1'] ? (
       <section id="part-3-2" className="scroll-mt-44 mb-10">
-      <PartHeader number="3-2" title="滑輪實驗室" />
-      <PulleyLab />
-      <MiniQuiz partId="3-2" />
+        <PartHeader number="3-2" title="滑輪實驗室" />
+        <PulleyLab />
+        <MiniQuiz partId="3-2" />
       </section>
-      ) : (
-        <LockedPlaceholder partId="3-2" title="滑輪實驗室" requiresPartId="3-1" />
-      )}
 
-      {/* Wordwall Game：3-2 通過後出現 */}
-      {unlocked['3-2'] && (
-        <WordwallGame
-          src="https://wordwall.net/tc/embed/34a2928692324200becafd3a500078a6?themeId=23&templateId=49&fontStackId=0"
-          sectionLabel="滑輪"
-        />
-      )}
+      <WordwallGameGate partId="3-2"
+        src="https://wordwall.net/tc/embed/34a2928692324200becafd3a500078a6?themeId=23&templateId=49&fontStackId=0"
+        sectionLabel="滑輪" />
     </div>
   );
 }
@@ -1408,7 +1467,7 @@ function GearSection() {
   return (
     <div className="animate-fade-in">
       <h2 className="text-2xl font-bold text-blue-800 mb-6 flex items-center gap-2 border-b pb-2">
-        <Settings className="text-blue-500" /> 齒輪與鏈條 + 綜合應用
+        <Settings className="text-blue-500" /> 第 7 節 齒輪+綜合：傳動與功不變總結
       </h2>
 
       {/* Part 4-1 */}
