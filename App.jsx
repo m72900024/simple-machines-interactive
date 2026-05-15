@@ -823,6 +823,11 @@ function LeverSection1() {
 
       {/* 補充：我家槓桿大搜尋 - 自我檢測（含答錯統計） */}
       {unlocked['1-2'] && <LeverQuizPanel />}
+
+      {/* Wordwall：第 1 節活動（1-2 通過後出現） */}
+      <WordwallGameGate partId="1-2"
+        src="https://wordwall.net/tc/embed/eca6d69c61f5477baafbf4a42816756a?themeId=2&templateId=2&fontStackId=0"
+        sectionLabel="槓桿三類型配對" />
     </div>
   );
 }
